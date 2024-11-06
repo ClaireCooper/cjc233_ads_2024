@@ -80,26 +80,26 @@ def housing_upload_join_data(conn, year):
     """
     start_date = str(year) + "-01-01"
     end_date = str(year) + "-12-31"
+    with conn.cursor() as cur:
+        print('Selecting data for year: ' + str(year))
+        cur.execute(f'SELECT pp.price, pp.date_of_transfer, po.postcode, pp.property_type, pp.new_build_flag, '
+                    f'pp.tenure_type, pp.locality, pp.town_city, pp.district, pp.county, po.country, po.latitude, '
+                    f'po.longitude FROM (SELECT price, date_of_transfer, postcode, property_type, new_build_flag, '
+                    f'tenure_type, locality, town_city, district, county FROM pp_data WHERE date_of_transfer '
+                    f'BETWEEN "' + start_date + '" AND "' + end_date + '") AS pp INNER JOIN postcode_data AS po '
+                                                                       'ON pp.postcode = po.postcode')
+        rows = cur.fetchall()
 
-    cur = conn.cursor()
-    print('Selecting data for year: ' + str(year))
-    cur.execute(f'SELECT pp.price, pp.date_of_transfer, po.postcode, pp.property_type, pp.new_build_flag, '
-                f'pp.tenure_type, pp.locality, pp.town_city, pp.district, pp.county, po.country, po.latitude, '
-                f'po.longitude FROM (SELECT price, date_of_transfer, postcode, property_type, new_build_flag, '
-                f'tenure_type, locality, town_city, district, county FROM pp_data WHERE date_of_transfer BETWEEN "' +
-                start_date + '" AND "' + end_date + '") AS pp INNER JOIN postcode_data AS po ON pp.postcode = '
-                                                    'po.postcode')
-    rows = cur.fetchall()
+        csv_file_path = 'output_file.csv'
 
-    csv_file_path = 'output_file.csv'
-
-    # Write the rows to the CSV file
-    with open(csv_file_path, 'w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        # Write the data rows
-        csv_writer.writerows(rows)
-    print('Storing data for year: ' + str(year))
-    cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file_path + "' INTO TABLE `prices_coordinates_data` FIELDS "
-                                                              "TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' LINES "
-                                                              "STARTING BY '' TERMINATED BY '\n';")
+        # Write the rows to the CSV file
+        with open(csv_file_path, 'w', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile)
+            # Write the data rows
+            csv_writer.writerows(rows)
+        print('Storing data for year: ' + str(year))
+        cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file_path + "' INTO TABLE `prices_coordinates_data` FIELDS "
+                                                                  "TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' "
+                                                                  "LINES STARTING BY '' TERMINATED BY '\n';")
+    conn.commit()
     print('Data stored for year: ' + str(year))
