@@ -5,6 +5,7 @@ import pymysql
 import csv
 import osmnx as ox
 import osmnx.utils_geo
+import pandas as pd
 
 """These are the types of import we might expect in this file
 import httplib2
@@ -109,3 +110,16 @@ def housing_upload_join_data(conn, year):
 def buildings_in_area(latitude, longitude, box_side_length_m):
     bbox = osmnx.utils_geo.bbox_from_point((latitude, longitude), box_side_length_m / 2)
     return ox.features_from_bbox(bbox=bbox, tags={'building': True})
+
+
+def houses_within_distance_from_point(conn, latitude, longitude, box_side_length_m, year):
+    (north, south, east, west) = osmnx.utils_geo.bbox_from_point((latitude, longitude), box_side_length_m / 2)
+    with conn.cursor() as cur:
+        cur.execute(
+            f'SELECT * FROM (SELECT * FROM postcode_data WHERE latitude BETWEEN {south} AND {north} AND longitude '
+            f'BETWEEN {west} AND {east}) AS po INNER JOIN (SELECT * FROM pp_data WHERE year(date_of_transfer) >= \''
+            f'{year}\') AS pp ON po.postcode = pp.postcode')
+        columns = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+    return df.loc[:, ~df.columns.duplicated()]
