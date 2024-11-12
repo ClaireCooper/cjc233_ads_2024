@@ -20,13 +20,16 @@ def data():
     df = access.data()
     raise NotImplementedError
 
+
 def query(data):
     """Request user input for some aspect of the data."""
     raise NotImplementedError
 
+
 def view(data):
     """Provide a view of the data that allows the user to verify some aspect of its quality."""
     raise NotImplementedError
+
 
 def labelled(data):
     """Provide a labelled set of data ready for supervised learning."""
@@ -38,3 +41,7 @@ def buildings_with_addresses(buildings_df):
         (buildings_df['addr:housenumber'].notnull() | buildings_df['addr:housename'].notnull()) & buildings_df[
             'addr:street'].notnull() & buildings_df['addr:postcode'].notnull()].loc[
         'way', ['addr:housenumber', 'addr:housename', 'addr:street', 'addr:postcode', 'geometry']]
+
+
+def areas_from_gdf(gdf):
+    return gdf['geometry'].to_crs(epsg=6933).area
