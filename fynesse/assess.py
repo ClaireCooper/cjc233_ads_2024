@@ -75,6 +75,17 @@ def join_ppaid_and_osm_address_dfs(ppaid_df, address_area_gdf):
     joined_df = ppaid_df.merge(address_area_gdf, left_on='street', right_on='upper_street')
     joined_df = joined_df[
         (joined_df['primary_addressable_object_name'].str.upper() == joined_df['addr:housenumber'].str.upper()) | (
-                    joined_df['primary_addressable_object_name'].str.upper() == joined_df['addr:housename'].str.upper())
-    ]
+                joined_df['primary_addressable_object_name'].str.upper() == joined_df['addr:housename'].str.upper())
+        ]
     return joined_df.drop('upper_street', axis=1)
+
+
+def scatter_plot(ax, x, y, title, x_label, y_label, x_log, y_log):
+    ax.plot(x, y, 'bx')
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    if x_log:
+        ax.set_xscale('log')
+    ax.set_ylabel(y_label)
+    if y_log:
+        ax.set_yscale('log')
