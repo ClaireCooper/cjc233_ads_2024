@@ -68,3 +68,13 @@ def plot_gdfs(gdfs):
 
     plt.tight_layout()
     plt.show()
+
+
+def join_ppaid_and_osm_address_dfs(ppaid_df, address_area_gdf):
+    address_area_gdf['upper_street'] = address_area_gdf['addr:street'].str.upper().str.replace("'", "")
+    joined_df = ppaid_df.merge(address_area_gdf, left_on='street', right_on='upper_street')
+    joined_df = joined_df[
+        (joined_df['primary_addressable_object_name'].str.upper() == joined_df['addr:housenumber'].str.upper()) | (
+                    joined_df['primary_addressable_object_name'].str.upper() == joined_df['addr:housename'].str.upper())
+    ]
+    return joined_df.drop('upper_street', axis=1)
