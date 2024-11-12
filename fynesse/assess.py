@@ -3,10 +3,16 @@ from .config import *
 from . import access
 
 import pandas as pd
+import geopandas
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from sklearn.cluster import KMeans
+from kneed import KneeLocator
 from datetime import datetime, date
 import math
+import osmnx as ox
+import osmnx.utils_geo
+import numpy as np
 
 """These are the types of import we might expect in this file
 import pandas
@@ -181,3 +187,86 @@ def plot_area_adjusted_correlations(all_data_df, freeholds_df):
                  True, True)
 
     plt.show()
+
+
+def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, distance_km: float = 1.0) -> dict:
+    """
+    Count Points of Interest (POIs) near a given pair of coordinates within a specified distance.
+    Args:
+        latitude (float): Latitude of the location.
+        longitude (float): Longitude of the location.
+        tags (dict): A dictionary of OSM tags to filter the POIs (e.g., {'amenity': True, 'tourism': True}).
+        distance_km (float): The distance around the location in kilometers. Default is 1 km.
+    Returns:
+        dict: A dictionary where keys are the OSM tags and values are the counts of POIs for each tag.
+    """
+    bbox = osmnx.utils_geo.bbox_from_point((latitude, longitude), int(distance_km * 1000))
+    pois = ox.features_from_bbox(bbox=bbox, tags=tags)
+    pois_df = pd.DataFrame(pois)
+    poi_counts = {}
+    for tag, values in tags.items():
+        if tag in pois_df.columns:
+            if values == True:
+                poi_counts[tag] = pois_df[tag].notnull().sum()
+            else:
+                for v in values:
+                    poi_counts[tag + ':' + v] = len(pois_df[pois_df[tag] == v])
+        elif values == True:
+            poi_counts[tag] = 0
+        else:
+            for v in values:
+                poi_counts[tag + ':' + v] = 0
+    return poi_counts
+
+
+def normalise_df(df):
+    norm = df.copy()
+    return (norm - norm.mean()) / norm.std()
+
+
+def ideal_num_clusters_for_normalised_df(df, max_clusters=10):
+    inertias = []
+    for k in range(1, max_clusters + 1):
+        kmeans = KMeans(n_clusters=k, init="k-means++")
+        kmeans.fit(df.values)
+        inertias.append(kmeans.inertia_)
+
+    elbow = KneeLocator(range(1, max_clusters + 1), inertias, curve="convex", direction="decreasing").elbow
+    plt.plot(range(1, max_clusters + 1), inertias)
+    plt.xticks(range(1, max_clusters + 1))
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("SSE")
+    plt.show()
+    return elbow
+
+
+def distance_matrix_from_normalised_df(df, distance_fun):
+    distance_matrix = pd.DataFrame(index=df.index, columns=df.index, dtype=float)
+    for x in df.index:
+        for y in df.index:
+            distance_matrix.loc[x, y] = distance_fun(x, y)
+    return distance_matrix
+
+
+def plot_distance_matrix(fig, ax, matrix):
+    im = ax.matshow(matrix)
+    axis = np.arange(len(matrix.index))
+    ax.set_xticks(axis)
+    ax.set_yticks(axis)
+    ax.set_xticklabels(matrix.index, fontsize=14, rotation=90)
+    ax.set_yticklabels(matrix.index, fontsize=14)
+    fig.colorbar(im, ax=ax)
+
+
+def plot_lat_lon_points_by_category(ax, category_column, gdf):
+    gdf.plot(column=category_column, ax=ax, markersize=10, legend=True, categorical=True)
+    ax.set_xlabel("longitude")
+    ax.set_ylabel("latitude")
+
+
+def plot_country_border(ax, gdf):
+    gdf.plot(ax=ax, color='white', edgecolor='black')
+
+
+def gdf_from_df_with_lat_lon(df, lat_column='Latitude', lon_column='Longitude'):
+    return geopandas.GeoDataFrame(df, geometry=geopandas.points_from_xy(df[lon_column], df[lat_column]))
