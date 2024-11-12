@@ -153,3 +153,31 @@ def add_predict_prices_to_price_paid_df(df):
     timestamps = df['date_of_transfer'].apply(lambda d: [timestamp_from_date(d)])
 
     df['predicted_price_now'] = predict_prices_now(timestamps.tolist(), df['price'])
+
+
+def plot_area_adjusted_correlations(all_data_df, freeholds_df):
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(18, 5))
+    scatter_plot(ax1,
+                 all_data_df['area_m2'],
+                 all_data_df['price'],
+                 'Area vs price', 'area (log)',
+                 'price(log)',
+                 True, True)
+
+    scatter_plot(ax2,
+                 freeholds_df['area_m2'],
+                 freeholds_df['price'],
+                 'Area vs price for freeholds only',
+                 'area (log)',
+                 'price(log)',
+                 True, True)
+
+    scatter_plot(ax3,
+                 freeholds_df['area_m2'],
+                 freeholds_df['predicted_price_now'],
+                 'Area vs estimated 2024 price\n for freeholds only',
+                 'area (log)',
+                 '2024 price(log)',
+                 True, True)
+
+    plt.show()
