@@ -6,6 +6,7 @@ import csv
 import osmnx as ox
 import osmnx.utils_geo
 import pandas as pd
+from pathlib import Path
 
 """These are the types of import we might expect in this file
 import httplib2
@@ -123,3 +124,12 @@ def houses_within_distance_from_point(conn, latitude, longitude, box_side_length
         rows = cur.fetchall()
     df = pd.DataFrame(rows, columns=columns)
     return df.loc[:, ~df.columns.duplicated()]
+
+
+def download_country_border(country_code):
+    if not Path(f"./{country_code}.gpkg").is_file():
+        url = f"https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_{country_code}.gpkg"
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(f"./{country_code}.gpkg", "wb") as f:
+                f.write(response.content)
