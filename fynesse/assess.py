@@ -5,7 +5,7 @@ from . import access
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
-from datetime import datetime
+from datetime import datetime, date
 import math
 
 """These are the types of import we might expect in this file
