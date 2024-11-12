@@ -4,6 +4,9 @@ from . import access
 
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from datetime import datetime
+import math
 
 """These are the types of import we might expect in this file
 import pandas
@@ -125,3 +128,28 @@ def plot_factors_affecting_price(df):
                  True, True)
 
     plt.show()
+
+
+def predict_prices_now(timestamps, prices):
+    log_prices = list(map(lambda p: math.log(p), prices.tolist()))
+    price_model = LinearRegression().fit(timestamps, log_prices)
+    m = price_model.coef_
+    c = price_model.intercept_
+    # ln(p) = mt + c
+    # p = e^(mt+c)
+
+    log_predicted_price_today = (
+        price_model.predict([[datetime.combine(date.today(), datetime.min.time()).timestamp()]])[0])
+
+    return list(map(lambda tp: math.exp(tp[1] + (log_predicted_price_today - price_model.predict([tp[0]])[0])),
+                    zip(timestamps, log_prices)))
+
+
+def timestamp_from_date(date):
+    return datetime.combine(date, datetime.min.time()).timestamp()
+
+
+def add_predict_prices_to_price_paid_df(df):
+    timestamps = df['date_of_transfer'].apply(lambda d: [timestamp_from_date(d)])
+
+    df['predicted_price_now'] = predict_prices_now(timestamps.tolist(), df['price'])
