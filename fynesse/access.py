@@ -3,7 +3,8 @@ from .config import *
 import requests
 import pymysql
 import csv
-import time
+import osmnx as ox
+import osmnx.utils_geo
 
 """These are the types of import we might expect in this file
 import httplib2
@@ -103,3 +104,8 @@ def housing_upload_join_data(conn, year):
                                                                   "LINES STARTING BY '' TERMINATED BY '\n';")
     conn.commit()
     print('Data stored for year: ' + str(year))
+
+
+def buildings_in_area(latitude, longitude, box_side_length_m):
+    bbox = osmnx.utils_geo.bbox_from_point((latitude, longitude), box_side_length_m / 2)
+    return ox.features_from_bbox(bbox=bbox, tags={'building': True})
