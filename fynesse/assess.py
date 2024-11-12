@@ -89,3 +89,39 @@ def scatter_plot(ax, x, y, title, x_label, y_label, x_log, y_log):
     ax.set_ylabel(y_label)
     if y_log:
         ax.set_yscale('log')
+
+
+def plot_factors_affecting_price(df):
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 10))
+    scatter_plot(ax1,
+                 df['area_m2'],
+                 df['price'],
+                 'Area vs price', 'area (log)',
+                 'price(log)',
+                 True, True)
+
+    ax2.boxplot((
+        df[df['tenure_type'] == 'L']['price'],
+        df[df['tenure_type'] == 'F']['price']),
+        showmeans=False, showfliers=False,
+        labels=['Leasehold', 'Freehold'])
+    ax2.set_title('Lease type vs price')
+    ax2.set_ylabel('price')
+
+    scatter_plot(ax3,
+                 df[df['tenure_type'] == 'F']['date_of_transfer'],
+                 df[df['tenure_type'] == 'F']['price'],
+                 'Date of transfer vs price for freeholds only',
+                 'date',
+                 'price(log)',
+                 False, True)
+
+    scatter_plot(ax4,
+                 df[df['tenure_type'] == 'F']['area_m2'],
+                 df[df['tenure_type'] == 'F']['price'],
+                 'Area vs price for freeholds only',
+                 'area (log)',
+                 'price(log)',
+                 True, True)
+
+    plt.show()
