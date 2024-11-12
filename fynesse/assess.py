@@ -1,5 +1,7 @@
 from .config import *
 
+import pandas as pd
+
 from . import access
 
 """These are the types of import we might expect in this file
@@ -29,3 +31,10 @@ def view(data):
 def labelled(data):
     """Provide a labelled set of data ready for supervised learning."""
     raise NotImplementedError
+
+
+def buildings_with_addresses(buildings_df):
+    return buildings_df[
+        (buildings_df['addr:housenumber'].notnull() | buildings_df['addr:housename'].notnull()) & buildings_df[
+            'addr:street'].notnull() & buildings_df['addr:postcode'].notnull()].loc[
+        'way', ['addr:housenumber', 'addr:housename', 'addr:street', 'addr:postcode', 'geometry']]
