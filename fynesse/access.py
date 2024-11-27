@@ -158,3 +158,12 @@ def download_census_data(code, base_dir=''):
 
 def load_census_data(code, level='msoa'):
     return pd.read_csv(f'census2021-{code.lower()}/census2021-{code.lower()}-{level}.csv')
+
+
+def select_all_from_table(conn, table):
+    with conn.cursor() as cur:
+        cur.execute(f'SELECT * FROM {table}')
+        columns = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+    return df.loc[:, ~df.columns.duplicated()]
