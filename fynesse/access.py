@@ -179,3 +179,13 @@ def select_all_from_oa_table(conn):
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()]
+
+
+def download_output_area_data():
+    url = ('https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/6beafcfd9b9c4c9993a06b6b199d7e6d'
+           '/geojson?layers=0')
+    if not Path(f"./output_areas.geojson").is_file():
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(f"./output_areas.geojson", "wb") as f:
+                f.write(response.content)
