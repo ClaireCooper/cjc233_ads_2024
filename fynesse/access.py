@@ -6,6 +6,7 @@ from pathlib import Path
 import osmnx as ox
 import osmnx.utils_geo
 import pandas as pd
+import geopandas as gpd
 import pymysql
 import requests
 
@@ -167,3 +168,14 @@ def select_all_from_table(conn, table):
         rows = cur.fetchall()
     df = pd.DataFrame(rows, columns=columns)
     return df.loc[:, ~df.columns.duplicated()]
+
+
+def select_all_from_oa_table(conn):
+    with conn.cursor() as cur:
+        cur.execute(f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry FROM oa_data')
+        columns = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()]
