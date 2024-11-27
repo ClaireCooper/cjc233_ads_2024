@@ -3,7 +3,7 @@ from .config import *
 from . import access
 
 import pandas as pd
-import geopandas
+import geopandas as gpd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
@@ -269,4 +269,16 @@ def plot_country_border(ax, gdf):
 
 
 def gdf_from_df_with_lat_lon(df, lat_column='Latitude', lon_column='Longitude'):
-    return geopandas.GeoDataFrame(df, geometry=geopandas.points_from_xy(df[lon_column], df[lat_column]))
+    return gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[lon_column], df[lat_column]))
+
+
+def select_output_areas_in_limits(conn, north, south, east, west):
+    with conn.cursor() as cur:
+        cur.execute(
+            f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry FROM oa_data WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}')
+        columns = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()]
