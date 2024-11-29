@@ -219,6 +219,8 @@ def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
     gdf = gdf.to_crs(points_crs)
     oas = []
     for point in points:
-        oas.append(gdf[gdf.geometry.apply(
-            lambda g: shapely.within(point, g))]['output_area'].item())
+        oas_l = gdf[gdf.apply(
+            lambda g: shapely.within(point, g['geometry']), axis=1)]['output_area']
+        if oas_l.size > 0:
+            oas.append(oas_l.item())
     return oas
