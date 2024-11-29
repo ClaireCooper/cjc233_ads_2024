@@ -9,6 +9,7 @@ import pandas as pd
 import geopandas as gpd
 import pymysql
 import requests
+import shapely
 
 from .config import *
 
@@ -204,3 +205,20 @@ def download_country_osm_data(country, continent='europe'):
             with open(f"./{continent.lower().replace(' ', '_')}/"
                       f"{country.lower().replace(' ', '_')}.osm.pbf", "wb") as f:
                 f.write(response.content)
+
+
+def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
+    with conn.cursor() as cur:
+        cur.execute(f'SELECT output_area, ST_AsBinary(geometry) as geometry FROM oa_data')
+        columns = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    gdf = gdf.loc[:, ~df.columns.duplicated()]
+    gdf = gdf.to_crs(points_crs)
+    oas = []
+    for point in points:
+        oas.append(gdf[gdf.geometry.apply(
+            lambda g: shapely.within(point, g))]['output_area'][0])
+    return oas
