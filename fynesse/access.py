@@ -268,6 +268,44 @@ def save_tag_locations_as_csv(osm_file_path, tag_list):
         writer.writerows(handler.tag_locations)
 
 
+def save_key_locations_as_csv(osm_file_path, key_list):
+    class _KeyLocationHandler(osm.SimpleHandler):
+        def __init__(self, keys_list):
+            osm.SimpleHandler.__init__(self)
+            self.key_locations = []
+            self.keys = keys_list
+
+        def tag_inventory(self, elem):
+            center = shapely.centroid(shape(elem.__geo_interface__['geometry']))
+            for tag in elem.tags:
+                if tag.k in self.keys:
+                    self.key_locations.append([center.x,
+                                               center.y,
+                                               tag.k,
+                                               tag.v])
+            if len(self.key_locations) % 10 == 0:
+                print(len(self.key_locations), "locations found")
+
+        def node(self, n):
+            self.tag_inventory(n)
+
+        def way(self, w):
+            self.tag_inventory(w)
+
+        def relation(self, r):
+            self.tag_inventory(r)
+
+    handler = _KeyLocationHandler(key_list)
+    osm.apply(osm_file_path,
+              osm.filter.EmptyTagFilter(),
+              osm.filter.KeyFilter(*key_list),
+              osm.filter.GeoInterfaceFilter(),
+              handler)
+    with open('key_locations.csv', 'w', newline='') as f:
+        writer = csv.writer(f, lineterminator='\n')
+        writer.writerows(handler.key_locations)
+
+
 def upload_tag_locations_csv_to_db(conn, path='./tag_locations.csv'):
     with conn.cursor() as cur:
         cur.execute(f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `osm_data` '
