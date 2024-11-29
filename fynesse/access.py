@@ -230,35 +230,32 @@ def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
     return oas
 
 
-class _TagLocationHandler(osm.SimpleHandler):
-    def __init__(self, tags_list):
-        osm.SimpleHandler.__init__(self)
-        self.tag_locations = []
-        self.tags = tags_list
-
-    def tag_inventory(self, elem):
-        center = shapely.centroid(shape(elem.__geo_interface__['geometry']))
-        for tag in elem.tags:
-            if tag in self.tags:
-                self.tag_locations.append([center.x,
-                                          center.y,
-                                          tag.k,
-                                          tag.v])
-
-    def node(self, n):
-        self.tag_inventory(n)
-
-    def way(self, w):
-        self.tag_inventory(w)
-
-    def relation(self, r):
-        self.tag_inventory(r)
-
-
-tags = [('building', 'university')]
-
-
 def save_tag_locations_as_csv(osm_file_path, tag_list):
+    class _TagLocationHandler(osm.SimpleHandler):
+        def __init__(self, tags_list):
+            osm.SimpleHandler.__init__(self)
+            self.tag_locations = []
+            self.tags = tags_list
+
+        def tag_inventory(self, elem):
+            center = shapely.centroid(shape(elem.__geo_interface__['geometry']))
+            for tag in elem.tags:
+                if tag in self.tags:
+                    self.tag_locations.append([center.x,
+                                               center.y,
+                                               tag.k,
+                                               tag.v])
+            if len(self.tags) % 10 == 0:
+                print(len(self.tags), "locations found")
+        def node(self, n):
+            self.tag_inventory(n)
+
+        def way(self, w):
+            self.tag_inventory(w)
+
+        def relation(self, r):
+            self.tag_inventory(r)
+
     handler = _TagLocationHandler(tag_list)
     osm.apply(osm_file_path,
               osm.filter.EmptyTagFilter(),
