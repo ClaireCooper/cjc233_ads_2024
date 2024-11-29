@@ -271,5 +271,5 @@ def save_tag_locations_as_csv(osm_file_path, tag_list):
 def upload_tag_locations_csv_to_db(conn, path='./tag_locations.csv'):
     with conn.cursor() as cur:
         cur.execute(f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `osm_data` '
-                    f'FIELDS TERMINATED BY "," LINES STARTING BY '' TERMINATED BY "\n";')
+                    f'FIELDS TERMINATED BY "," LINES STARTING BY "" TERMINATED BY "\n";')
     conn.commit()
