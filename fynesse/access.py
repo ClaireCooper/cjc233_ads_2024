@@ -246,7 +246,7 @@ def save_tag_locations_as_csv(osm_file_path, tag_list):
                                                tag.k,
                                                tag.v])
             if len(self.tag_locations) % 10 == 0:
-                print(len(self.tags), "locations found")
+                print(len(self.tag_locations), "locations found")
 
         def node(self, n):
             self.tag_inventory(n)
