@@ -27,7 +27,7 @@ VERSION = "0.1.0"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    "pandas", "numpy", "jupyter", "matplotlib", "pymysql", "kneed", "osmnx<=1.9.4"
+    "pandas", "numpy", "jupyter", "matplotlib", "pymysql", "kneed", "osmnx<=1.9.4", "osmium"
 ]
 
 # What packages are optional?

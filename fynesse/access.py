@@ -10,6 +10,8 @@ import geopandas as gpd
 import pymysql
 import requests
 import shapely
+import osmium as osm
+from shapely.geometry import shape
 
 from .config import *
 
@@ -207,6 +209,12 @@ def download_country_osm_data(country, continent='europe'):
                 f.write(response.content)
 
 
+def _inner(row, points, oas):
+    for i in range(len(points)):
+        if shapely.within(points[i], row['geometry']):
+            oas[i] = row['output_area']
+
+
 def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
     with conn.cursor() as cur:
         cur.execute(f'SELECT output_area, ST_AsBinary(geometry) as geometry FROM oa_data')
@@ -217,10 +225,46 @@ def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     gdf = gdf.loc[:, ~df.columns.duplicated()]
     gdf = gdf.to_crs(points_crs)
-    oas = []
-    for point in points:
-        oas_l = gdf[gdf.apply(
-            lambda g: shapely.within(point, g['geometry']), axis=1)]['output_area']
-        if oas_l.size > 0:
-            oas.append(oas_l.item())
+    oas = [None for point in range(len(points))]
+    gdf.apply(lambda row: _inner(row, points, oas), axis=1)
     return oas
+
+
+class _TagLocationHandler(osm.SimpleHandler):
+    def __init__(self, tags_list):
+        osm.SimpleHandler.__init__(self)
+        self.tag_locations = []
+        self.tags = tags_list
+
+    def tag_inventory(self, elem):
+        center = shapely.centroid(shape(elem.__geo_interface__['geometry']))
+        for tag in elem.tags:
+            if tag in self.tags:
+                self.tag_locations.append([center.x,
+                                          center.y,
+                                          tag.k,
+                                          tag.v])
+
+    def node(self, n):
+        self.tag_inventory(n)
+
+    def way(self, w):
+        self.tag_inventory(w)
+
+    def relation(self, r):
+        self.tag_inventory(r)
+
+
+tags = [('building', 'university')]
+
+
+def save_tag_locations_as_csv(osm_file_path, tag_list):
+    handler = _TagLocationHandler(tag_list)
+    osm.apply(osm_file_path,
+              osm.filter.EmptyTagFilter(),
+              osm.filter.TagFilter(*tag_list),
+              osm.filter.GeoInterfaceFilter(),
+              handler)
+    with open('tag_locations.csv', 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(handler.tag_locations)
