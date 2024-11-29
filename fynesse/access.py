@@ -194,8 +194,11 @@ def download_output_area_data():
 def download_country_osm_data(country, continent='europe'):
     url = (f"https://download.openstreetmap.fr/extracts/{continent.lower().replace(' ', '_')}/"
            f"{country.lower().replace(' ', '_')}.osm.pbf")
-    if not Path(f"./{continent.lower().replace(' ', '_')}"
-                f"/{country.lower().replace(' ', '_')}.osm.pbf").is_file():
+
+    output_file = Path(f"./{continent.lower().replace(' ', '_')}"
+                       f"/{country.lower().replace(' ', '_')}.osm.pbf")
+    if not output_file.is_file():
+        output_file.parent.mkdir(exist_ok=True, parents=True)
         response = requests.get(url)
         if response.status_code == 200:
             with open(f"./{continent.lower().replace(' ', '_')}/"
