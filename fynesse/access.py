@@ -264,7 +264,7 @@ def save_tag_locations_as_csv(osm_file_path, tag_list):
               osm.filter.GeoInterfaceFilter(),
               handler)
     with open('tag_locations.csv', 'w', newline='') as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator='\n')
         writer.writerows(handler.tag_locations)
 
 
