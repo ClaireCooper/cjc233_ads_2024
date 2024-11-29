@@ -189,3 +189,15 @@ def download_output_area_data():
         if response.status_code == 200:
             with open(f"./output_areas.geojson", "wb") as f:
                 f.write(response.content)
+
+
+def download_country_osm_data(country, continent='europe'):
+    url = (f"https://download.openstreetmap.fr/extracts/{continent.lower().replace(' ', '_')}/"
+           f"{country.lower().replace(' ', '_')}.osm.pbf")
+    if not Path(f"./{continent.lower().replace(' ', '_')}"
+                f"/{country.lower().replace(' ', '_')}.osm.pbf").is_file():
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(f"./{continent.lower().replace(' ', '_')}/"
+                      f"{country.lower().replace(' ', '_')}.osm.pbf", "wb") as f:
+                f.write(response.content)
