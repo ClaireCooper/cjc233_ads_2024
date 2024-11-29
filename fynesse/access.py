@@ -245,7 +245,7 @@ def save_tag_locations_as_csv(osm_file_path, tag_list):
                                                center.y,
                                                tag.k,
                                                tag.v])
-            if len(self.tags) % 10 == 0:
+            if len(self.tag_locations) % 10 == 0:
                 print(len(self.tags), "locations found")
 
         def node(self, n):
