@@ -3,14 +3,14 @@ import io
 import zipfile
 from pathlib import Path
 
+import geopandas as gpd
+import osmium as osm
 import osmnx as ox
 import osmnx.utils_geo
 import pandas as pd
-import geopandas as gpd
 import pymysql
 import requests
 import shapely
-import osmium as osm
 from shapely.geometry import shape
 
 from .config import *
