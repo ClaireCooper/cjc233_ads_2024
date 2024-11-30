@@ -311,3 +311,7 @@ def upload_csv_to_db(conn, table='osm_data', path='./tag_locations.csv'):
         cur.execute(f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `{table}` '
                     f'FIELDS TERMINATED BY "," LINES STARTING BY "" TERMINATED BY "\n";')
     conn.commit()
+
+
+def save_df_to_csv_for_db(df, filename):
+    df.to_csv(filename, header=False, index=False, lineterminator='\n')
