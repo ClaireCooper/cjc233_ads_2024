@@ -342,7 +342,7 @@ def census_upload_join_data(conn):
 
 def select_all_from_table_with_geometry(conn, table, geometry_column='geometry'):
     with conn.cursor() as cur:
-        cur.execute(f'SELECT *, ST_AsBinary(geometry) as geometry_bin FROM {table}')
+        cur.execute(f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table}')
         columns = [d[0] for d in cur.description]
         rows = cur.fetchall()
     df = pd.DataFrame(rows, columns=columns)
