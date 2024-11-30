@@ -280,6 +280,6 @@ def select_output_areas_in_limits(conn, north, south, east, west, table_name='oa
         columns = [d[0] for d in cur.description]
         rows = cur.fetchall()
     df = pd.DataFrame(rows, columns=columns)
-    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
