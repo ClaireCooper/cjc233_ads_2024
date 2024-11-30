@@ -272,13 +272,14 @@ def gdf_from_df_with_lat_lon(df, lat_column='Latitude', lon_column='Longitude'):
     return gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[lon_column], df[lat_column]))
 
 
-def select_output_areas_in_limits(conn, north, south, east, west):
+def select_output_areas_in_limits(conn, north, south, east, west, table_name='oa_data', geometry_column='geometry'):
     with conn.cursor() as cur:
         cur.execute(
-            f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry FROM oa_data WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}')
+            f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table_name} '
+            f'WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}')
         columns = [d[0] for d in cur.description]
         rows = cur.fetchall()
     df = pd.DataFrame(rows, columns=columns)
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
-    return gdf.loc[:, ~df.columns.duplicated()]
+    return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
