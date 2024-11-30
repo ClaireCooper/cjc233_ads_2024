@@ -122,14 +122,10 @@ def buildings_in_area(latitude, longitude, box_side_length_m):
 
 def houses_within_distance_from_point(conn, latitude, longitude, box_side_length_m, year):
     (north, south, east, west) = osmnx.utils_geo.bbox_from_point((latitude, longitude), box_side_length_m / 2)
-    with conn.cursor() as cur:
-        cur.execute(
-            f'SELECT * FROM (SELECT * FROM postcode_data WHERE latitude BETWEEN {south} AND {north} AND longitude '
-            f'BETWEEN {west} AND {east}) AS po INNER JOIN (SELECT * FROM pp_data WHERE year(date_of_transfer) >= \''
-            f'{year}\') AS pp ON po.postcode = pp.postcode')
-        columns = [d[0] for d in cur.description]
-        rows = cur.fetchall()
-    df = pd.DataFrame(rows, columns=columns)
+    db_query = (f'SELECT * FROM (SELECT * FROM postcode_data WHERE latitude BETWEEN {south} AND {north} AND longitude '
+                f'BETWEEN {west} AND {east}) AS po INNER JOIN (SELECT * FROM pp_data WHERE year(date_of_transfer) >= \''
+                f'{year}\') AS pp ON po.postcode = pp.postcode')
+    df = pd.read_sql(db_query, conn)
     return df.loc[:, ~df.columns.duplicated()]
 
 
@@ -165,20 +161,14 @@ def load_census_data(code, level='msoa'):
 
 
 def select_all_from_table(conn, table):
-    with conn.cursor() as cur:
-        cur.execute(f'SELECT * FROM {table}')
-        columns = [d[0] for d in cur.description]
-        rows = cur.fetchall()
-    df = pd.DataFrame(rows, columns=columns)
+    db_query = f'SELECT * FROM {table}'
+    df = pd.read_sql(db_query, conn)
     return df.loc[:, ~df.columns.duplicated()]
 
 
 def select_all_from_oa_table(conn):
-    with conn.cursor() as cur:
-        cur.execute(f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry FROM oa_data')
-        columns = [d[0] for d in cur.description]
-        rows = cur.fetchall()
-    df = pd.DataFrame(rows, columns=columns)
+    db_query = f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry FROM oa_data'
+    df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()]
@@ -216,11 +206,8 @@ def _inner(row, points, oas):
 
 
 def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
-    with conn.cursor() as cur:
-        cur.execute(f'SELECT output_area, ST_AsBinary(geometry) as geometry FROM oa_data')
-        columns = [d[0] for d in cur.description]
-        rows = cur.fetchall()
-    df = pd.DataFrame(rows, columns=columns)
+    db_query = f'SELECT output_area, ST_AsBinary(geometry) as geometry FROM oa_data'
+    df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     gdf = gdf.loc[:, ~df.columns.duplicated()]
@@ -341,11 +328,8 @@ def census_upload_join_data(conn):
 
 
 def select_all_from_table_with_geometry(conn, table, geometry_column='geometry'):
-    with conn.cursor() as cur:
-        cur.execute(f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table}')
-        columns = [d[0] for d in cur.description]
-        rows = cur.fetchall()
-    df = pd.DataFrame(rows, columns=columns)
+    db_query = f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table}'
+    df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)

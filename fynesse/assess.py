@@ -1,18 +1,17 @@
-from .config import *
+import math
+from datetime import datetime, date
 
-from . import access
-
-import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from sklearn.cluster import KMeans
-from kneed import KneeLocator
-from datetime import datetime, date
-import math
+import numpy as np
 import osmnx as ox
 import osmnx.utils_geo
-import numpy as np
+import pandas as pd
+from kneed import KneeLocator
+from sklearn.cluster import KMeans
+from sklearn.linear_model import LinearRegression
+
+from . import access
 
 """These are the types of import we might expect in this file
 import pandas
@@ -273,13 +272,9 @@ def gdf_from_df_with_lat_lon(df, lat_column='Latitude', lon_column='Longitude'):
 
 
 def select_output_areas_in_limits(conn, north, south, east, west, table_name='oa_data', geometry_column='geometry'):
-    with conn.cursor() as cur:
-        cur.execute(
-            f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table_name} '
-            f'WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}')
-        columns = [d[0] for d in cur.description]
-        rows = cur.fetchall()
-    df = pd.DataFrame(rows, columns=columns)
+    db_query = (f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table_name} '
+                f'WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}')
+    df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
