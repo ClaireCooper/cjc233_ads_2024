@@ -338,3 +338,15 @@ def census_upload_join_data(conn):
                                                                   "geometry = ST_GeomFromText(@geom);")
     conn.commit()
     print('Data uploaded.')
+
+
+def select_all_from_census_oa_join_table(conn):
+    with conn.cursor() as cur:
+        cur.execute(f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry, L15, '
+                    f'population_density FROM census_oa_data')
+        columns = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()]
