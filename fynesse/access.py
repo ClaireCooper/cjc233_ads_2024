@@ -315,3 +315,26 @@ def upload_csv_to_db(conn, table, path):
 
 def save_df_to_csv_for_db(df, filename):
     df.to_csv(filename, header=False, index=False, lineterminator='\n')
+
+
+def census_upload_join_data(conn):
+    with conn.cursor() as cur:
+        print('Selecting data...')
+        cur.execute(f'SELECT oa.output_area, oa.latitude, oa.longitude, oa.geometry, sec.L15, pd.population_density '
+                    f'FROM oa_data AS oa INNER JOIN sec_data AS sec ON oa.output_area = sec.geography INNER JOIN '
+                    f'pd_data as pd ON oa.output_area = pd.output_area')
+        rows = cur.fetchall()
+
+        csv_file_path = 'output_file.csv'
+        print('Storing data to CSV...')
+        # Write the rows to the CSV file
+        with open(csv_file_path, 'w', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile, lineterminator='\n')
+            # Write the data rows
+            csv_writer.writerows(rows)
+        print('Uploading data...')
+        cur.execute(f"LOAD DATA LOCAL INFILE '" + csv_file_path + "' INTO TABLE `census_oa_data` FIELDS "
+                                                                  "TERMINATED BY ',' OPTIONALLY ENCLOSED by '\"' "
+                                                                  "LINES STARTING BY '' TERMINATED BY '\n';")
+    conn.commit()
+    print('Data uploaded.')
