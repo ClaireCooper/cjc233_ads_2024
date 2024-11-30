@@ -350,3 +350,14 @@ def select_all_from_census_oa_join_table(conn):
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()]
+
+
+def select_all_from_table_with_geometry(conn, table, geometry_column='geometry'):
+    with conn.cursor() as cur:
+        cur.execute(f'SELECT *, ST_AsBinary(geometry) as geometry_bin FROM {table}')
+        columns = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+    gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
