@@ -306,8 +306,8 @@ def save_key_locations_as_csv(osm_file_path, key_list):
         writer.writerows(handler.key_locations)
 
 
-def upload_tag_locations_csv_to_db(conn, path='./tag_locations.csv'):
+def upload_csv_to_db(conn, table='osm_data', path='./tag_locations.csv'):
     with conn.cursor() as cur:
-        cur.execute(f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `osm_data` '
+        cur.execute(f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `{table}` '
                     f'FIELDS TERMINATED BY "," LINES STARTING BY "" TERMINATED BY "\n";')
     conn.commit()
