@@ -322,7 +322,7 @@ def census_upload_join_data(conn):
         print('Selecting data...')
         cur.execute(f'SELECT oa.output_area, oa.latitude, oa.longitude, oa.geometry, sec.L15, pd.population_density '
                     f'FROM oa_data AS oa INNER JOIN sec_data AS sec ON oa.output_area = sec.geography INNER JOIN '
-                    f'pd_data as pd ON oa.output_area = pd.output_area')
+                    f'pd_data as pd ON oa.output_area = pd.geography')
         rows = cur.fetchall()
 
         csv_file_path = 'output_file.csv'
