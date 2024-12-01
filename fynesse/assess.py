@@ -278,3 +278,19 @@ def select_output_areas_in_limits(conn, north, south, east, west, table_name='oa
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
+
+
+def select_osm_by_tag_and_value(conn, key, value):
+    db_query = f'SELECT *, ST_AsBinary(geometry) as geometry_bin FROM osm_data WHERE tagkey="{key}" AND tagvalue="{value}"'
+    df = pd.read_sql(db_query, conn)
+    gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
+
+
+def select_osm_by_tag(conn, key):
+    db_query = f'SELECT *, ST_AsBinary(geometry) as geometry_bin FROM osm_data WHERE tagkey="{key}"'
+    df = pd.read_sql(db_query, conn)
+    gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
