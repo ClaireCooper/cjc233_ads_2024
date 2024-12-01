@@ -223,38 +223,48 @@ def save_tag_locations_as_csv(osm_file_path, tag_list):
             osm.SimpleHandler.__init__(self)
             self.tag_locations = []
             self.tags = tags_list
+            self.fab = osm.geom.WKTFactory()
 
-        def tag_inventory(self, elem):
-            elem_shape = shape(elem.__geo_interface__['geometry'])
-            center = shapely.centroid(elem_shape)
+        def tag_inventory(self, elem, wkt):
+            center = shapely.centroid(shapely.from_wkt(wkt))
             for tag in elem.tags:
                 if tag in self.tags:
                     self.tag_locations.append([center.x,
                                                center.y,
                                                tag.k,
                                                tag.v,
-                                               shapely.to_wkt(elem_shape)])
-            if len(self.tag_locations) % 10 == 0:
+                                               f"{wkt}"])
+            if len(self.tag_locations) % 1000 == 0:
                 print(len(self.tag_locations), "locations found")
 
         def node(self, n):
-            self.tag_inventory(n)
+            wkt = self.fab.create_point(n.location)
+            self.tag_inventory(n, wkt)
 
         def way(self, w):
-            self.tag_inventory(w)
+            if not w.is_closed():
+                wkt = self.fab.create_linestring(w.nodes)
+                self.tag_inventory(w, wkt)
 
-        def relation(self, r):
-            self.tag_inventory(r)
+        def area(self, a):
+            try:
+                if a.from_way():
+                    wkt = 'POLYGON' + self.fab.create_multipolygon(a)[13:-1]
+                else:
+                    wkt = self.fab.create_multipolygon(a)
+                self.tag_inventory(a, wkt)
+            except:
+                print('Skipping area', a.id)
 
     handler = _TagLocationHandler(tag_list)
-    osm.apply(osm_file_path,
-              osm.filter.EmptyTagFilter(),
-              osm.filter.TagFilter(*tag_list),
-              osm.filter.GeoInterfaceFilter(),
-              handler)
+    handler.apply_file(osm_file_path, locations=True,
+                       filters=[osm.filter.EmptyTagFilter(),
+                                osm.filter.TagFilter(*tag_list)])
+    print('Writing data to CSV...')
     with open('tag_locations.csv', 'w', newline='') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerows(handler.tag_locations)
+    print('Done.')
 
 
 def save_key_locations_as_csv(osm_file_path, key_list):
@@ -263,38 +273,48 @@ def save_key_locations_as_csv(osm_file_path, key_list):
             osm.SimpleHandler.__init__(self)
             self.key_locations = []
             self.keys = keys_list
+            self.fab = osm.geom.WKTFactory()
 
-        def tag_inventory(self, elem):
-            elem_shape = shape(elem.__geo_interface__['geometry'])
-            center = shapely.centroid(elem_shape)
+        def tag_inventory(self, elem, wkt):
+            center = shapely.centroid(shapely.from_wkt(wkt))
             for tag in elem.tags:
                 if tag.k in self.keys:
                     self.key_locations.append([center.x,
                                                center.y,
                                                tag.k,
                                                tag.v,
-                                               shapely.to_wkt(elem_shape)])
-            if len(self.key_locations) % 10 == 0:
+                                               f"{wkt}"])
+            if len(self.key_locations) % 1000 == 0:
                 print(len(self.key_locations), "locations found")
 
         def node(self, n):
-            self.tag_inventory(n)
+            wkt = self.fab.create_point(n.location)
+            self.tag_inventory(n, wkt)
 
         def way(self, w):
-            self.tag_inventory(w)
+            if not w.is_closed():
+                wkt = self.fab.create_linestring(w.nodes)
+                self.tag_inventory(w, wkt)
 
-        def relation(self, r):
-            self.tag_inventory(r)
+        def area(self, a):
+            try:
+                if a.from_way():
+                    wkt = 'POLYGON' + self.fab.create_multipolygon(a)[13:-1]
+                else:
+                    wkt = self.fab.create_multipolygon(a)
+                self.tag_inventory(a, wkt)
+            except:
+                print('Skipping area', a.id)
 
     handler = _KeyLocationHandler(key_list)
-    osm.apply(osm_file_path,
-              osm.filter.EmptyTagFilter(),
-              osm.filter.KeyFilter(*key_list),
-              osm.filter.GeoInterfaceFilter(),
-              handler)
+    handler.apply_file(osm_file_path, locations=True,
+                       filters=[osm.filter.EmptyTagFilter(),
+                                osm.filter.KeyFilter(*key_list)])
+    print('Writing data to CSV...')
     with open('key_locations.csv', 'w', newline='') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerows(handler.key_locations)
+    print('Done.')
 
 
 def upload_csv_to_db(conn, table, path):
@@ -306,12 +326,16 @@ def upload_csv_to_db(conn, table, path):
 
 def upload_csv_to_db_with_geometry(conn, table, path, geometry_column='geometry'):
     columns = _get_column_names(conn, table)
+    columns.remove('db_id')
     if geometry_column in columns:
         columns_str = ('(' + ','.join(columns) + ')').replace(geometry_column, '@geom')
         with conn.cursor() as cur:
-            cur.execute(f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `{table}` '
-                        f'FIELDS TERMINATED BY "," LINES STARTING BY "" TERMINATED BY "\n" {columns_str} '
-                        f'SET {geometry_column} = ST_GeomFromText(@geom);')
+            query = (f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `{table}` '
+                     f'FIELDS TERMINATED BY "," OPTIONALLY ENCLOSED by \'"\' '
+                     f'LINES STARTING BY "" TERMINATED BY "\n"{columns_str}'
+                     f'SET {geometry_column} = ST_GeomFromText(@geom);')
+            print(query)
+            cur.execute(query)
         conn.commit()
     else:
         print(geometry_column, 'not a column in table:', table)
