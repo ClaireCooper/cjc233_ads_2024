@@ -225,13 +225,15 @@ def save_tag_locations_as_csv(osm_file_path, tag_list):
             self.tags = tags_list
 
         def tag_inventory(self, elem):
-            center = shapely.centroid(shape(elem.__geo_interface__['geometry']))
+            elem_shape = shape(elem.__geo_interface__['geometry'])
+            center = shapely.centroid(elem_shape)
             for tag in elem.tags:
                 if tag in self.tags:
                     self.tag_locations.append([center.x,
                                                center.y,
                                                tag.k,
-                                               tag.v])
+                                               tag.v,
+                                               shapely.to_wkt(elem_shape)])
             if len(self.tag_locations) % 10 == 0:
                 print(len(self.tag_locations), "locations found")
 
@@ -263,13 +265,15 @@ def save_key_locations_as_csv(osm_file_path, key_list):
             self.keys = keys_list
 
         def tag_inventory(self, elem):
-            center = shapely.centroid(shape(elem.__geo_interface__['geometry']))
+            elem_shape = shape(elem.__geo_interface__['geometry'])
+            center = shapely.centroid(elem_shape)
             for tag in elem.tags:
                 if tag.k in self.keys:
                     self.key_locations.append([center.x,
                                                center.y,
                                                tag.k,
-                                               tag.v])
+                                               tag.v,
+                                               shapely.to_wkt(elem_shape)])
             if len(self.key_locations) % 10 == 0:
                 print(len(self.key_locations), "locations found")
 
