@@ -304,6 +304,26 @@ def upload_csv_to_db(conn, table, path):
     conn.commit()
 
 
+def upload_csv_to_db_with_geometry(conn, table, path, geometry_column='geometry'):
+    columns = _get_column_names(conn, table)
+    if geometry_column in columns:
+        columns_str = ('(' + ','.join(columns) + ')').replace(geometry_column, '@geom')
+        with conn.cursor() as cur:
+            cur.execute(f'LOAD DATA LOCAL INFILE "{path}" INTO TABLE `{table}` '
+                        f'FIELDS TERMINATED BY "," LINES STARTING BY "" TERMINATED BY "\n" {columns_str} '
+                        f'SET {geometry_column} = ST_GeomFromText(@geom);')
+        conn.commit()
+    else:
+        print(geometry_column, 'not a column in table:', table)
+
+
+def _get_column_names(conn, table):
+    with conn.cursor() as cur:
+        cur.execute(f'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = "{table}"')
+        names = cur.fetchall()
+    return [name[0] for name in names]
+
+
 def save_df_to_csv_for_db(df, filename):
     df.to_csv(filename, header=False, index=False, lineterminator='\n')
 
