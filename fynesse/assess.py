@@ -313,3 +313,13 @@ def plot_osm_feature(conn, ax, border, tag, value=None):
     ax.set_xlim([-6.5, None])
     ax.set_ylim([None, 55.9])
     ax.set_axis_off()
+
+
+def get_oa_feature_counts(conn, year, features, distance=1000):
+    df = pd.read_sql('SELECT output_area FROM census_oa_data ORDER BY output_area', conn)
+    for (key, value) in features:
+        db_query = (f'SELECT counts.count FROM (SELECT output_area, count FROM osm_oa_radius_counts '
+                    f'WHERE year={year} AND tagkey="{key}" AND tagvalue="{value}" and distance={distance}) as counts '
+                    f'RIGHT JOIN census_oa_data as oa on oa.output_area = counts.output_area ORDER BY oa.output_area')
+        df[key + ':' + value] = pd.read_sql(db_query, conn)['count'].fillna(0).astype(int)
+    return df.set_index('output_area')
