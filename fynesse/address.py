@@ -44,10 +44,10 @@ def get_output_area_from_coordinates(conn, longitude, latitude):
     query = (f'SELECT output_area FROM oa_data '
              f'WHERE ST_CONTAINS(geometry, ST_GeomFromText("POINT({easting} {northing})")) LIMIT 1')
     df = pd.read_sql(query, conn)
-    return df['output_area']
+    return df['output_area'].tolist()[0]
 
 
-def get_feature_counts_for_output_area(conn, output_area, features, year, distance=1000):
+def get_feature_counts_for_output_area(conn, output_area, year, distance=1000):
     db_query = (f'SELECT tagkey, tagvalue, count FROM osm_oa_radius_counts '
                 f'WHERE year={year} AND output_area="{output_area}"'
                 f'AND distance={distance}')
