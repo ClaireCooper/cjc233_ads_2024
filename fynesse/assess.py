@@ -329,3 +329,11 @@ def get_census_variable(conn, variable):
     db_query = f'SELECT output_area, {variable} FROM census_oa_data ORDER BY output_area'
     df = pd.read_sql(db_query, conn)
     return df.loc[:, ~df.columns.duplicated()].set_index('output_area')
+
+
+def select_output_area_geometries(conn):
+    db_query = f'SELECT output_area, ST_AsBinary(geometry) as geometry FROM oa_data'
+    df = pd.read_sql(db_query, conn)
+    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()].set_index('output_area')
