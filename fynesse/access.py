@@ -382,3 +382,20 @@ def select_all_from_table_with_geometry(conn, table, geometry_column='geometry',
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs=crs)
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
+
+
+def osm_in_oa_radius_counts_to_csv(conn, distance, year, tag, value):
+    with conn.cursor() as cur:
+        print('Selecting data...')
+        cur.execute(f'select year, output_area, tagkey, tagvalue, {distance} as distance, count(*) as count from ('
+                    f'select year, output_area, latitude, longitude from oa_data where year = {year}) as oa cross '
+                    f'join (select latitude, longitude, tagkey, tagvalue from osm_data where tagkey="{tag}" and '
+                    f'tagvalue="{value}") as osm where ST_DISTANCE_SPHERE(POINT(oa.longitude, oa.latitude), '
+                    f'POINT(osm.longitude, osm.latitude)) < {distance} GROUP BY year, output_area, tagkey, tagvalue;')
+        rows = cur.fetchall()
+
+        csv_file_path = f'osm_oa_{tag}_{value}.csv'
+        print('Storing data to CSV...')
+        with open(csv_file_path, 'w', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile, lineterminator='\n')
+            csv_writer.writerows(rows)
