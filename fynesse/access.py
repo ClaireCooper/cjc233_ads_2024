@@ -171,7 +171,7 @@ def select_all_from_oa_table(conn):
     db_query = f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry FROM oa_data'
     df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
-    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:4326')
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()]
 
 
@@ -210,7 +210,7 @@ def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
     db_query = f'SELECT output_area, ST_AsBinary(geometry) as geometry FROM oa_data'
     df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
-    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:4326')
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     gdf = gdf.loc[:, ~df.columns.duplicated()]
     gdf = gdf.to_crs(points_crs)
     oas = [None for point in range(len(points))]
