@@ -375,9 +375,9 @@ def census_upload_join_data(conn):
     print('Data uploaded.')
 
 
-def select_all_from_table_with_geometry(conn, table, geometry_column='geometry'):
+def select_all_from_table_with_geometry(conn, table, geometry_column='geometry', crs='EPSG:27700'):
     db_query = f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table}'
     df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
-    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs=crs)
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
