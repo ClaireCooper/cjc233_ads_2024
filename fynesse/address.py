@@ -16,6 +16,8 @@ import scipy.stats"""
 import pandas as pd
 from pyproj import Transformer
 
+from . import assess
+
 """Address a particular question that arises from the data"""
 
 
