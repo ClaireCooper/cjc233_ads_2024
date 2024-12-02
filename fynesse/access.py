@@ -129,12 +129,13 @@ def houses_within_distance_from_point(conn, latitude, longitude, box_side_length
     return df.loc[:, ~df.columns.duplicated()]
 
 
-def download_country_border(country_code):
-    if not Path(f"./{country_code}.gpkg").is_file():
-        url = f"https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_{country_code}.gpkg"
+def download_country_border():
+    if not Path(f"./GBR.gpkg").is_file():
+        url = (f"https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items"
+               f"/31a5004908f749cbbce606d4c6d560b9/geoPackage?layers=0")
         response = requests.get(url)
         if response.status_code == 200:
-            with open(f"./{country_code}.gpkg", "wb") as f:
+            with open(f"./GBR.gpkg", "wb") as f:
                 f.write(response.content)
 
 
