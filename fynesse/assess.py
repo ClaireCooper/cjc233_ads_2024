@@ -276,7 +276,7 @@ def select_output_areas_in_limits(conn, north, south, east, west, table_name='oa
                 f'WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}')
     df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
-    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:4326')
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
 
 
