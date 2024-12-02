@@ -328,4 +328,4 @@ def get_oa_feature_counts(conn, year, features, distance=1000):
 def get_census_variable(conn, variable):
     db_query = f'SELECT output_area, {variable} FROM census_oa_data ORDER BY output_area'
     df = pd.read_sql(db_query, conn)
-    return df.loc[:, ~df.columns.duplicated()]
+    return df.loc[:, ~df.columns.duplicated()].set_index('output_area')
