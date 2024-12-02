@@ -14,11 +14,28 @@ import tensorflow as tf
 # Or if it's a statistical analysis
 import scipy.stats"""
 import pandas as pd
+import statsmodels.api as sm
 from pyproj import Transformer
 
 from . import assess
 
 """Address a particular question that arises from the data"""
+
+
+def y_pred_ols(x, y, x_pred, design_fn, alpha=0.05, silent=False):
+    y_glm = sm.OLS(y, design_fn(x))
+    y_model = y_glm.fit()
+    if not silent:
+        print(y_model.summary())
+    return y_model.get_prediction(design_fn(x_pred)).summary_frame(alpha=alpha)
+
+
+def y_pred(family_with_link, x, y, x_pred, design_fn, alpha=0.05, silent=False):
+    y_glm = sm.GLM(y, design_fn(x), family=family_with_link)
+    y_model = y_glm.fit()
+    if not silent:
+        print(y_model.summary())
+    return y_model.get_prediction(design_fn(x_pred)).summary_frame(alpha=alpha)
 
 
 def get_output_area_from_coordinates(conn, longitude, latitude):
@@ -31,15 +48,8 @@ def get_output_area_from_coordinates(conn, longitude, latitude):
 
 
 def get_feature_counts_for_output_area(conn, output_area, features, year, distance=1000):
-    index = [key + ':' + value for (key, value) in features]
-    data = {}
-    for (key, value) in features:
-        db_query = (f'SELECT count FROM osm_oa_radius_counts '
-                    f'WHERE year={year} AND output_area="{output_area}" AND tagkey="{key}" AND tagvalue="{value}" '
-                    f'and distance={distance}')
-        df = pd.read_sql(db_query, conn)['count']
-        if df.shape[0] == 0:
-            data[key + ':' + value] = 0
-        else:
-            data[key + ':' + value] = df.at[0]
-    return pd.Series(data=data, index=index)
+    db_query = (f'SELECT tagkey, tagvalue, count FROM osm_oa_radius_counts '
+                f'WHERE year={year} AND output_area="{output_area}"'
+                f'AND distance={distance}')
+    df = pd.read_sql(db_query, conn)
+    return df
