@@ -26,3 +26,18 @@ def get_output_area_from_coordinates(conn, longitude, latitude):
              f'WHERE ST_CONTAINS(geometry, ST_GeomFromText("POINT({easting} {northing})")) LIMIT 1')
     df = pd.read_sql(query, conn)
     return df['output_area']
+
+
+def get_feature_counts_for_output_area(conn, output_area, features, year, distance=1000):
+    index = [key + ':' + value for (key, value) in features]
+    data = {}
+    for (key, value) in features:
+        db_query = (f'SELECT count FROM osm_oa_radius_counts '
+                    f'WHERE year={year} AND output_area="{output_area}" AND tagkey="{key}" AND tagvalue="{value}" '
+                    f'and distance={distance}')
+        df = pd.read_sql(db_query, conn)['count']
+        if df.shape[0] == 0:
+            data[key + ':' + value] = 0
+        else:
+            data[key + ':' + value] = df.at[0]
+    return pd.Series(data=data, index=index)
