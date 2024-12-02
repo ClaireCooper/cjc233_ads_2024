@@ -294,3 +294,22 @@ def select_osm_by_tag(conn, key):
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:4326')
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
+
+
+def plot_osm_feature(conn, ax, border, tag, value=None):
+    if value is None:
+        osm_df = select_osm_by_tag(conn, tag)
+        title = tag + ':'
+    else:
+        osm_df = select_osm_by_tag_and_value(conn, tag, value)
+        title = tag + ':' + value
+    osm_df['centroid'] = gpd.points_from_xy(osm_df['longitude'], osm_df['latitude'])
+    osm_df = osm_df.set_geometry('centroid')
+    osm_df = osm_df.set_crs('EPSG:4326')
+    osm_df.to_crs(border.crs)
+    plot_country_border(ax, border)
+    osm_df.plot(ax=ax, markersize=4, color='red')
+    ax.set_title(title)
+    ax.set_xlim([-6.5, None])
+    ax.set_ylim([None, 55.9])
+    ax.set_axis_off()
