@@ -51,3 +51,18 @@ def y_train_pred_and_save_model(family_with_link, x, y, x_pred, design_fn, path,
         print(y_model.summary())
     x_pred_d = np.array([design_fn(i) for i in x_pred.to_numpy()])
     return y_model.get_prediction(x_pred_d).summary_frame(alpha=alpha)
+
+
+def plot_area_variable_map(ax, areas, values):
+    areas_withy = areas.copy()
+    areas_withy = areas_withy.reset_index()
+    areas_withy['y'] = values
+    areas_withy.plot(ax=ax, column='y', legend=True, edgecolor="face", linewidth=0.2, cmap='viridis_r')
+    ax.set_axis_off()
+
+
+def plot_residuals_map(ax, areas, residuals):
+    areas_withy = areas.copy()
+    areas_withy['residual'] = residuals
+    areas_withy.plot(ax=ax, column='residual', legend=True, edgecolor="face", linewidth=0.2, cmap='PRGn')
+    ax.set_axis_off()
