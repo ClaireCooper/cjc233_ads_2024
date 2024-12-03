@@ -13,6 +13,7 @@ import tensorflow as tf
 
 # Or if it's a statistical analysis
 import scipy.stats"""
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from pyproj import Transformer
@@ -22,24 +23,8 @@ from . import assess
 """Address a particular question that arises from the data"""
 
 
-def y_pred_ols(x, y, x_pred, design_fn, alpha=0.05, silent=False):
-    y_glm = sm.OLS(y, design_fn(x))
-    y_model = y_glm.fit()
-    if not silent:
-        print(y_model.summary())
-    return y_model.get_prediction(design_fn(x_pred)).summary_frame(alpha=alpha)
-
-
-def y_pred(family_with_link, x, y, x_pred, design_fn, alpha=0.05, silent=False):
-    y_glm = sm.GLM(y, design_fn(x), family=family_with_link)
-    y_model = y_glm.fit()
-    if not silent:
-        print(y_model.summary())
-    return y_model.get_prediction(design_fn(x_pred)).summary_frame(alpha=alpha)
-
-
 def get_output_area_from_coordinates(conn, longitude, latitude):
-    transformer = Transformer.from_crs("EPSG:4326", "EPSG:27700",  always_xy=True)
+    transformer = Transformer.from_crs("EPSG:4326", "EPSG:27700", always_xy=True)
     easting, northing = transformer.transform(longitude, latitude)
     query = (f'SELECT output_area FROM oa_data '
              f'WHERE ST_CONTAINS(geometry, ST_GeomFromText("POINT({easting} {northing})")) LIMIT 1')
@@ -53,3 +38,16 @@ def get_feature_counts_for_output_area(conn, output_area, year, distance=1000):
                 f'AND distance={distance}')
     df = pd.read_sql(db_query, conn)
     return df
+
+
+def y_train_pred_and_save_model(family_with_link, x, y, x_pred, design_fn, path, alpha=0.05, silent=False):
+    x_d = np.array([design_fn(i) for i in x.to_numpy()])
+    np.max(x_d, axis=0)
+    y_glm = sm.GLM(y, x_d, family=family_with_link)
+    y_model = y_glm.fit()
+    y_model.save(path)
+    print('Saved trained model to:', path)
+    if not silent:
+        print(y_model.summary())
+    x_pred_d = np.array([design_fn(i) for i in x_pred.to_numpy()])
+    return y_model.get_prediction(x_pred_d).summary_frame(alpha=alpha)
