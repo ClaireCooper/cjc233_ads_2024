@@ -16,6 +16,7 @@ import scipy.stats"""
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+from matplotlib import colors
 from pyproj import Transformer
 
 from . import assess
@@ -61,8 +62,23 @@ def plot_area_variable_map(ax, areas, values):
     ax.set_axis_off()
 
 
+def plot_area_variable_map_log_colorscale(ax, areas, values):
+    areas_withy = areas.copy()
+    areas_withy = areas_withy.reset_index()
+    areas_withy['y'] = values
+    areas_withy.plot(ax=ax, column='y', legend=True, edgecolor="face", linewidth=0.3,
+                     norm=colors.LogNorm(vmin=areas_withy[areas_withy.population_density >= 1].population_density.min(),
+                                         vmax=areas_withy.population_density.max(), clip=True))
+    ax.set_axis_off()
+
+
 def plot_residuals_map(ax, areas, residuals):
     areas_withy = areas.copy()
     areas_withy['residual'] = residuals
     areas_withy.plot(ax=ax, column='residual', legend=True, edgecolor="face", linewidth=0.2, cmap='PRGn')
     ax.set_axis_off()
+
+
+def get_students_at_coordinates(conn, students_df, latitude, longitude):
+    output_area = get_output_area_from_coordinates(conn, longitude, latitude)
+    return students_df.loc[output_area]['L15']
