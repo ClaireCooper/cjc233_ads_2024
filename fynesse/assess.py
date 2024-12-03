@@ -349,7 +349,6 @@ def select_random_output_areas(conn, number, seed):
 
 
 def osm_in_oa_radius_counts(conn, output_area, tag, value, distance=1000, year=2021):
-    print('Selecting data...')
     db_query = (f'select count(*) from ('
                 f'select latitude, longitude from oa_data where year = {year} '
                 f'and output_area="{output_area}") as oa cross '
