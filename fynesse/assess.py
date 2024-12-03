@@ -337,3 +337,12 @@ def select_output_area_geometries(conn):
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()].set_index('output_area')
+
+
+def select_random_output_areas(conn, number, seed):
+    db_query = (f'SELECT * '
+                f'FROM oa_data ORDER BY RAND({seed}) LIMIT {number}')
+    df = pd.read_sql(db_query, conn)
+    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
+    return gdf.loc[:, ~df.columns.duplicated()].set_index('output_area')
