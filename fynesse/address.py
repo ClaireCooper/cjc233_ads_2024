@@ -79,6 +79,6 @@ def plot_residuals_map(ax, areas, residuals):
     ax.set_axis_off()
 
 
-def get_students_at_coordinates(conn, students_df, latitude, longitude):
+def get_students(conn, students_df, latitude, longitude):
     output_area = get_output_area_from_coordinates(conn, longitude, latitude)
     return students_df.loc[output_area]['L15']
