@@ -346,3 +346,16 @@ def select_random_output_areas(conn, number, seed):
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
     return gdf.loc[:, ~df.columns.duplicated()].set_index('output_area')
+
+
+def osm_in_oa_radius_counts(conn, output_area, tag, value, distance=1000, year=2021):
+    print('Selecting data...')
+    db_query = (f'select count(*) from ('
+                f'select latitude, longitude from oa_data where year = {year} '
+                f'and output_area="{output_area}") as oa cross '
+                f'join (select latitude, longitude, tagkey, tagvalue from osm_data where tagkey="{tag}" and '
+                f'tagvalue="{value}") as osm where ST_DISTANCE_SPHERE(POINT(oa.longitude, oa.latitude), '
+                f'POINT(osm.longitude, osm.latitude)) < {distance};')
+    df = pd.read_sql(db_query, conn)
+    return df.values[0][0]
+
