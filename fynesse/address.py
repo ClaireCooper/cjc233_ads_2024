@@ -67,7 +67,7 @@ def plot_area_variable_map_log_colorscale(ax, areas, values):
     areas_withy = areas_withy.reset_index()
     areas_withy['y'] = values
     areas_withy.plot(ax=ax, column='y', legend=True, edgecolor="face", linewidth=0.3,
-                     norm=colors.LogNorm(vmin=areas_withy[areas_withy.population_density >= 1].y.min(),
+                     norm=colors.LogNorm(vmin=areas_withy[areas_withy.y >= 1].y.min(),
                                          vmax=areas_withy.y.max(), clip=True))
     ax.set_axis_off()
 
