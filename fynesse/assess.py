@@ -353,8 +353,48 @@ def osm_in_oa_radius_counts(conn, output_area, tag, value, distance=1000, year=2
                 f'select latitude, longitude from oa_data where year = {year} '
                 f'and output_area="{output_area}") as oa cross '
                 f'join (select latitude, longitude, tagkey, tagvalue from osm_data where tagkey="{tag}" and '
-                f'tagvalue="{value}") as osm where ST_DISTANCE_SPHERE(POINT(oa.longitude, oa.latitude), '
+                f'tagvalue="{value}") as osm where '
+                f'ABS(oa.longitude - osm.longitude) < 0.04 and ABS(osm.latitude - oa.latitude) < 0.04 '
+                f'and ST_DISTANCE_SPHERE(POINT(oa.longitude, oa.latitude), '
                 f'POINT(osm.longitude, osm.latitude)) < {distance};')
     df = pd.read_sql(db_query, conn)
     return df.values[0][0]
 
+
+def select_feature_count_for_output_area(conn, output_area, feature, distance=1000, year=2021):
+    db_query = (f'SELECT count FROM osm_oa_radius_counts '
+                f'WHERE year={year} AND output_area="{output_area}" AND '
+                f'tagkey="{feature[0]}" AND tagvalue="{feature[1]}" '
+                f'AND distance={distance}')
+    with conn.cursor() as cur:
+        cur.execute(db_query)
+        rows = cur.fetchall()
+    if len(rows) == 0:
+        return None
+    return rows[0][0]
+
+
+def insert_feature_count_for_output_area(conn, output_area, tagkey, tagvalue, count, distance=1000, year=2021):
+    db_query = (
+        f"INSERT INTO osm_oa_radius_counts (year, output_area, tagkey, tagvalue, distance, count) "
+        f"VALUES({year}, '{output_area}', '{tagkey}', '{tagvalue}', {distance}, {count})")
+    with conn.cursor() as cur:
+        cur.execute(db_query)
+    conn.commit()
+
+
+def get_feature_counts(conn, oas, features, year=2021, distance=1000):
+    cs = []
+    cols = []
+    for (k, v) in features:
+        cols.append(k + ':' + v)
+        fcs = []
+        for oa in oas:
+            count = select_feature_count_for_output_area(conn, oa, (k, v), distance, year)
+            if count is None:
+                count = osm_in_oa_radius_counts(conn, oa, k, v, distance, year)
+                insert_feature_count_for_output_area(conn, oa, k, v, count, distance, year)
+            fcs.append(count)
+
+        cs.append(fcs)
+    return pd.DataFrame(np.array(cs).T, index=oas, columns=cols)
