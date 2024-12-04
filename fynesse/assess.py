@@ -7,7 +7,9 @@ import numpy as np
 import osmnx as ox
 import osmnx.utils_geo
 import pandas as pd
+import statsmodels.api as sm
 from kneed import KneeLocator
+from sklearn import metrics
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
 
@@ -345,7 +347,7 @@ def select_random_output_areas(conn, number, seed):
     df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
-    return gdf.loc[:, ~df.columns.duplicated()].set_index('output_area')
+    return gdf.loc[:, ~df.columns.duplicated()].set_index('output_area').sort_index()
 
 
 def osm_in_oa_radius_counts(conn, output_area, tag, value, distance=1000, year=2021):
@@ -401,6 +403,7 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     for (k, v) in features:
         fcs = select_feature_counts(conn, oas_str, (k, v), year, distance)
         if len(fcs) < len(oas):
+            print('oop', k, v)
             fcs = []
             for oa in oas:
                 count = select_feature_count_for_output_area(conn, oa, (k, v), distance, year)
@@ -410,3 +413,36 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
                 fcs.append(count)
         cs.append(fcs)
     return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))
+
+
+def predict_with_glm(family_with_link, x_train, y_train, x_test, add_constant=True):
+    if add_constant:
+        x_train = sm.tools.add_constant(x_train)
+        x_test = sm.tools.add_constant(x_test)
+    y_glm = sm.GLM(y_train, x_train, family=family_with_link)
+    y_model = y_glm.fit()
+    return y_model.predict(x_test)
+
+
+def get_r2s_for_features(conn, training_oas, testing_oas, features, y,
+                         family_with_link=sm.families.Gaussian(), design_fns=None):
+    training_feature_counts = get_feature_counts(conn, training_oas, features)
+    testing_feature_counts = get_feature_counts(conn, testing_oas, features)
+    r2s = {}
+    y_train = y.loc[training_oas]
+    y_test = y.loc[testing_oas]
+    if design_fns is None:
+        design_fns = {'linear': lambda x: x}
+    for (k, v) in features:
+        r2s[k + ':' + v] = {}
+        x_train = training_feature_counts[k][v]
+        x_test = testing_feature_counts[k][v]
+
+        for (name, f) in design_fns.items():
+            y_prediction = predict_with_glm(
+                family_with_link,
+                f(x_train),
+                y_train,
+                f(x_test))
+            r2s[k + ':' + v][name] = metrics.r2_score(y_test, y_prediction)
+    return pd.DataFrame(r2s).T
