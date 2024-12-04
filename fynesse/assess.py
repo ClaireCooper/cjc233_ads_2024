@@ -397,4 +397,4 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
             fcs.append(count)
 
         cs.append(fcs)
-    return pd.DataFrame(np.array(cs).T, index=oas, columns=cols)
+    return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))
