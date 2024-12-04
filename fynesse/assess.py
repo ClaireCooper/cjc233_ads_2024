@@ -403,7 +403,6 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     for (k, v) in features:
         fcs = select_feature_counts(conn, oas_str, (k, v), year, distance)
         if len(fcs) < len(oas):
-            print('oop', k, v)
             fcs = []
             for oa in oas:
                 count = select_feature_count_for_output_area(conn, oa, (k, v), distance, year)
