@@ -20,6 +20,7 @@ from matplotlib import colors
 from pyproj import Transformer
 
 from . import assess
+from . import access
 
 """Address a particular question that arises from the data"""
 
@@ -73,6 +74,13 @@ def plot_residuals_map(ax, areas, residuals):
     ax.set_axis_off()
 
 
-def get_students(conn, students_df, latitude, longitude):
+def get_students(conn, latitude, longitude):
+    students_df = access.select_all_from_table(conn, 'sec_data')
     output_area = get_output_area_from_coordinates(conn, longitude, latitude)
-    return students_df.loc[output_area]['L15']
+    return students_df.set_index('geography').loc[output_area]['L15']
+
+
+def get_pd(conn, latitude, longitude):
+    pd_df = access.select_all_from_table(conn, 'pd_data')
+    output_area = get_output_area_from_coordinates(conn, longitude, latitude)
+    return pd_df.set_index('geography').loc[output_area]['population_density']
