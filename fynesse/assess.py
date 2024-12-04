@@ -9,6 +9,7 @@ import osmnx.utils_geo
 import pandas as pd
 import statsmodels.api as sm
 from kneed import KneeLocator
+from matplotlib import colors
 from sklearn import metrics
 from sklearn.cluster import KMeans
 from sklearn.linear_model import LinearRegression
@@ -445,3 +446,21 @@ def get_r2s_for_features(conn, training_oas, testing_oas, features, y,
                 f(x_test))
             r2s[k + ':' + v][name] = metrics.r2_score(y_test, y_prediction)
     return pd.DataFrame(r2s).T
+
+
+def plot_area_variable_map(ax, areas, values):
+    areas_withy = areas.copy()
+    areas_withy = areas_withy.reset_index()
+    areas_withy['y'] = values
+    areas_withy.plot(ax=ax, column='y', legend=True, edgecolor="face", linewidth=0.2, cmap='viridis_r')
+    ax.set_axis_off()
+
+
+def plot_area_variable_map_log_colorscale(ax, areas, values):
+    areas_withy = areas.copy()
+    areas_withy = areas_withy.reset_index()
+    areas_withy['y'] = values
+    areas_withy.plot(ax=ax, column='y', legend=True, edgecolor="face", linewidth=0.3,
+                     norm=colors.LogNorm(vmin=areas_withy[areas_withy.y >= 1].y.min(),
+                                         vmax=areas_withy.y.max(), clip=True))
+    ax.set_axis_off()

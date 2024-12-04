@@ -13,13 +13,10 @@ import tensorflow as tf
 
 # Or if it's a statistical analysis
 import scipy.stats"""
-import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-from matplotlib import colors
 from pyproj import Transformer
 
-from . import assess
 from . import access
 
 """Address a particular question that arises from the data"""
@@ -47,24 +44,6 @@ def train_and_save_glm(family_with_link, x, y, path):
     y_model = y_glm.fit()
     y_model.save(path)
     print('Saved trained model to:', path)
-
-
-def plot_area_variable_map(ax, areas, values):
-    areas_withy = areas.copy()
-    areas_withy = areas_withy.reset_index()
-    areas_withy['y'] = values
-    areas_withy.plot(ax=ax, column='y', legend=True, edgecolor="face", linewidth=0.2, cmap='viridis_r')
-    ax.set_axis_off()
-
-
-def plot_area_variable_map_log_colorscale(ax, areas, values):
-    areas_withy = areas.copy()
-    areas_withy = areas_withy.reset_index()
-    areas_withy['y'] = values
-    areas_withy.plot(ax=ax, column='y', legend=True, edgecolor="face", linewidth=0.3,
-                     norm=colors.LogNorm(vmin=areas_withy[areas_withy.y >= 1].y.min(),
-                                         vmax=areas_withy.y.max(), clip=True))
-    ax.set_axis_off()
 
 
 def plot_residuals_map(ax, areas, residuals):
