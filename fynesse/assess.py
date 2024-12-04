@@ -383,18 +383,29 @@ def insert_feature_count_for_output_area(conn, output_area, tagkey, tagvalue, co
     conn.commit()
 
 
+def select_feature_counts(conn, oas_str, feature, year=2021, distance=1000):
+    db_query = (f'SELECT count FROM osm_oa_radius_counts '
+                f'WHERE year={year} AND output_area IN {oas_str} AND '
+                f'tagkey="{feature[0]}" AND tagvalue="{feature[1]}" '
+                f'AND distance={distance} ORDER BY output_area')
+    with conn.cursor() as cur:
+        cur.execute(db_query)
+        rows = cur.fetchall()
+    return [r[0] for r in rows]
+
+
 def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     cs = []
-    cols = []
+    oas_str = '(' + ','.join(['"' + oa + '"' for oa in oas]) + ')'
     for (k, v) in features:
-        cols.append(k + ':' + v)
-        fcs = []
-        for oa in oas:
-            count = select_feature_count_for_output_area(conn, oa, (k, v), distance, year)
-            if count is None:
-                count = osm_in_oa_radius_counts(conn, oa, k, v, distance, year)
-                insert_feature_count_for_output_area(conn, oa, k, v, count, distance, year)
-            fcs.append(count)
-
+        fcs = select_feature_counts(conn, oas_str, (k, v), year, distance)
+        if len(fcs) < len(oas):
+            fcs = []
+            for oa in oas:
+                count = select_feature_count_for_output_area(conn, oa, (k, v), distance, year)
+                if count is None:
+                    count = osm_in_oa_radius_counts(conn, oa, k, v, distance, year)
+                    insert_feature_count_for_output_area(conn, oa, k, v, count, distance, year)
+                fcs.append(count)
         cs.append(fcs)
-    return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))
+    return pd.DataFrame(np.array(cs).T, index=sorted(oas), columns=pd.MultiIndex.from_tuples(features))
