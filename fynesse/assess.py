@@ -396,6 +396,7 @@ def select_feature_counts(conn, oas_str, feature, year=2021, distance=1000):
 
 def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     cs = []
+    oas = sorted(oas)
     oas_str = '(' + ','.join(['"' + oa + '"' for oa in oas]) + ')'
     for (k, v) in features:
         fcs = select_feature_counts(conn, oas_str, (k, v), year, distance)
@@ -408,4 +409,4 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
                     insert_feature_count_for_output_area(conn, oa, k, v, count, distance, year)
                 fcs.append(count)
         cs.append(fcs)
-    return pd.DataFrame(np.array(cs).T, index=sorted(oas), columns=pd.MultiIndex.from_tuples(features))
+    return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))
