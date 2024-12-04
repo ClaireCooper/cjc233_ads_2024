@@ -41,17 +41,11 @@ def get_feature_counts_for_output_area(conn, output_area, year, distance=1000):
     return df
 
 
-def y_train_pred_and_save_model(family_with_link, x, y, x_pred, design_fn, path, alpha=0.05, silent=False):
-    x_d = np.array([design_fn(i) for i in x.to_numpy()])
-    np.max(x_d, axis=0)
-    y_glm = sm.GLM(y, x_d, family=family_with_link)
+def train_and_save_glm(family_with_link, x, y, path):
+    y_glm = sm.GLM(y, x, family=family_with_link)
     y_model = y_glm.fit()
     y_model.save(path)
     print('Saved trained model to:', path)
-    if not silent:
-        print(y_model.summary())
-    x_pred_d = np.array([design_fn(i) for i in x_pred.to_numpy()])
-    return y_model.get_prediction(x_pred_d).summary_frame(alpha=alpha)
 
 
 def plot_area_variable_map(ax, areas, values):
