@@ -342,12 +342,12 @@ def select_output_area_geometries(conn):
 
 
 def select_random_output_areas(conn, number, seed):
-    db_query = (f'SELECT * '
+    db_query = (f'SELECT *, ST_AsBinary(geometry) as geo_bin '
                 f'FROM oa_data ORDER BY RAND({seed}) LIMIT {number}')
     df = pd.read_sql(db_query, conn)
-    gs = gpd.GeoSeries.from_wkb(df['geometry'])
+    gs = gpd.GeoSeries.from_wkb(df['geo_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
-    return gdf.loc[:, ~df.columns.duplicated()].set_index('output_area').sort_index()
+    return gdf.loc[:, ~df.columns.duplicated()].drop('geo_bin', axis=1).set_index('output_area').sort_index()
 
 
 def osm_in_oa_radius_counts(conn, output_area, tag, value, distance=1000, year=2021):
