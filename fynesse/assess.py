@@ -208,12 +208,12 @@ def count_pois_near_coordinates(latitude: float, longitude: float, tags: dict, d
     poi_counts = {}
     for tag, values in tags.items():
         if tag in pois_df.columns:
-            if values == True:
+            if values is True:
                 poi_counts[tag] = pois_df[tag].notnull().sum()
             else:
                 for v in values:
                     poi_counts[tag + ':' + v] = len(pois_df[pois_df[tag] == v])
-        elif values == True:
+        elif values is True:
             poi_counts[tag] = 0
         else:
             for v in values:
@@ -284,7 +284,8 @@ def select_output_areas_in_limits(conn, north, south, east, west, table_name='oa
 
 
 def select_osm_by_tag_and_value(conn, key, value):
-    db_query = f'SELECT *, ST_AsBinary(geometry) as geometry_bin FROM osm_data WHERE tagkey="{key}" AND tagvalue="{value}"'
+    db_query = (f'SELECT *, ST_AsBinary(geometry) as geometry_bin '
+                f'FROM osm_data WHERE tagkey="{key}" AND tagvalue="{value}"')
     df = pd.read_sql(db_query, conn)
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:4326')
