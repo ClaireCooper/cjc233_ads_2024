@@ -63,3 +63,9 @@ def get_pd(conn, latitude, longitude):
     pd_df = access.select_all_from_table(conn, 'pd_data')
     output_area = get_output_area_from_coordinates(conn, longitude, latitude)
     return pd_df.set_index('geography').loc[output_area]['population_density']
+
+
+def get_health(conn, latitude, longitude):
+    health_df = access.select_all_from_table(conn, 'health_data')
+    output_area = get_output_area_from_coordinates(conn, longitude, latitude)
+    return health_df.set_index('geography').loc[output_area]['average']
