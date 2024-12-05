@@ -416,30 +416,6 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))
 
 
-def get_r2s_for_osm_features(conn, training_oas, testing_oas, features, y,
-                             family_with_link=sm.families.Gaussian(), design_fns=None):
-    training_feature_counts = get_feature_counts(conn, training_oas, features)
-    testing_feature_counts = get_feature_counts(conn, testing_oas, features)
-    r2s = {}
-    y_train = y.loc[training_oas]
-    y_test = y.loc[testing_oas]
-    if design_fns is None:
-        design_fns = {'linear': lambda x: x}
-    for (k, v) in features:
-        r2s[k + ':' + v] = {}
-        x_train = training_feature_counts[k][v]
-        x_test = testing_feature_counts[k][v]
-
-        for (name, f) in design_fns.items():
-            y_prediction = predict_with_glm(
-                family_with_link,
-                f(x_train),
-                y_train,
-                f(x_test))
-            r2s[k + ':' + v][name] = metrics.r2_score(y_test, y_prediction)
-    return pd.DataFrame(r2s).T
-
-
 def get_r2s_for_features(training_features, testing_features, y,
                          family_with_link=sm.families.Gaussian(), design_fns=None, group_size=1):
     r2s = {}
@@ -491,3 +467,10 @@ def plot_area_variable_map_log_colorscale(ax, areas, values):
                      norm=colors.LogNorm(vmin=areas_withy[areas_withy.y >= 1].y.min(),
                                          vmax=areas_withy.y.max(), clip=True))
     ax.set_axis_off()
+
+
+def get_ages(conn, oas, year=2021):
+    oas_str = '(' + ','.join(['"' + oa + '"' for oa in oas]) + ')'
+    db_query = f'SELECT * FROM age_data WHERE year={year} and geography in {oas_str}'
+    df = pd.read_sql(db_query, conn)
+    return df.drop(['db_id', 'year'], axis=1).set_index('geography')
