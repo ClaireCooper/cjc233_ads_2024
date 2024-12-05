@@ -466,6 +466,13 @@ def get_r2s_for_features(training_features, testing_features, y,
     return pd.DataFrame(r2s).T, models
 
 
+def predict_with_glm(family_with_link, x_train, y_train, x_test, add_constant=True):
+    if add_constant:
+        x_train = sm.tools.add_constant(x_train, has_constant='add')
+        x_test = sm.tools.add_constant(x_test, has_constant='add')
+    y_glm = sm.GLM(y_train, x_train, family=family_with_link)
+    y_model = y_glm.fit()
+    return y_model.predict(x_test), y_model
 
 
 def plot_area_variable_map(ax, areas, values):
