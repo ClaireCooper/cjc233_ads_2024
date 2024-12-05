@@ -416,17 +416,8 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))
 
 
-def predict_with_glm(family_with_link, x_train, y_train, x_test, add_constant=True):
-    if add_constant:
-        x_train = sm.tools.add_constant(x_train)
-        x_test = sm.tools.add_constant(x_test)
-    y_glm = sm.GLM(y_train, x_train, family=family_with_link)
-    y_model = y_glm.fit()
-    return y_model.predict(x_test)
-
-
-def get_r2s_for_features(conn, training_oas, testing_oas, features, y,
-                         family_with_link=sm.families.Gaussian(), design_fns=None):
+def get_r2s_for_osm_features(conn, training_oas, testing_oas, features, y,
+                             family_with_link=sm.families.Gaussian(), design_fns=None):
     training_feature_counts = get_feature_counts(conn, training_oas, features)
     testing_feature_counts = get_feature_counts(conn, testing_oas, features)
     r2s = {}
@@ -447,6 +438,34 @@ def get_r2s_for_features(conn, training_oas, testing_oas, features, y,
                 f(x_test))
             r2s[k + ':' + v][name] = metrics.r2_score(y_test, y_prediction)
     return pd.DataFrame(r2s).T
+
+
+def get_r2s_for_features(training_features, testing_features, y,
+                         family_with_link=sm.families.Gaussian(), design_fns=None, group_size=1):
+    r2s = {}
+    models = {}
+    y_train = y.loc[training_features.index.to_list()]
+    y_test = y.loc[testing_features.index.to_list()]
+    if design_fns is None:
+        design_fns = {'linear': lambda x: x}
+    for col in training_features.columns:
+        r2s[col] = {}
+        models[col] = {}
+        x_train = training_features[col]
+        x_test = testing_features[col]
+
+        for (name, f) in design_fns.items():
+            y_prediction, model = predict_with_glm(
+                family_with_link,
+                f(x_train),
+                y_train,
+                f(x_test),
+            )
+            r2s[col][name] = metrics.r2_score(y_test, y_prediction)
+            models[col][name] = model
+    return pd.DataFrame(r2s).T, models
+
+
 
 
 def plot_area_variable_map(ax, areas, values):
