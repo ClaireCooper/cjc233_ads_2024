@@ -407,7 +407,8 @@ def houses_sold_within_distance_box_from_point_in_year(conn, latitude, longitude
     (north, south, east, west) = osmnx.utils_geo.bbox_from_point((latitude, longitude), distance)
     db_query = (f'SELECT price, property_type, new_build_flag FROM (SELECT postcode FROM postcode_data '
                 f'WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}) AS po '
-                f'INNER JOIN (SELECT * FROM pp_data WHERE date_of_transfer BETWEEN \'{start_date}\' AND \'{end_date}\' AND tenure_type="F") '
+                f'INNER JOIN (SELECT * FROM pp_data WHERE date_of_transfer BETWEEN \'{start_date}\' AND \'{end_date}\' '
+                f'AND tenure_type="F" AND property_type<>"O")'
                 f'AS pp ON po.postcode = pp.postcode')
     df = pd.read_sql(db_query, conn)
     return df.loc[:, ~df.columns.duplicated()]
@@ -420,15 +421,16 @@ def get_coordinates_for_oa(conn, oa, year=2021):
 
 
 def save_oa_house_data_to_csv(conn, oas, distance, year):
-    prop_type = ['F', 'T', 'S', 'D', 'O']
+    prop_type = ['F', 'T', 'S', 'D']
     rows = []
     for oa in oas:
         row = []
         coordinates = get_coordinates_for_oa(conn, oa)
-        houses_df = houses_sold_within_distance_box_from_point_in_year(conn, coordinates.latitude, coordinates.longitude,
-                                                                       distance, year)
+        houses_df = houses_sold_within_distance_box_from_point_in_year(conn, coordinates.latitude,
+                                                                       coordinates.longitude, distance, year)
         row += [year, oa, distance]
-        row += [houses_df.price.max(), houses_df.price.min(), houses_df.price.mean(), houses_df.price.median()]
+        row += [houses_df.price.max(), houses_df.price.min(), houses_df.price.mean().astype(int),
+                houses_df.price.median()]
         row += [len(houses_df[houses_df.property_type == p]) for p in prop_type]
         row += [len(houses_df[houses_df.new_build_flag == 'Y']), len(houses_df.index)]
         rows.append(row)
