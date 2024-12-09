@@ -459,10 +459,14 @@ def insert_oa_house_data(conn, oas, distance, year):
         coordinates = get_coordinates_for_oa(conn, oa)
         houses_df = houses_sold_within_distance_box_from_point_in_year(conn, coordinates.latitude,
                                                                        coordinates.longitude, distance, year)
-        row += [year, oa, distance, houses_df.price.max(), houses_df.price.min(), houses_df.price.mean().astype(int),
-                houses_df.price.median()]
-        row += [len(houses_df[houses_df.property_type == p]) for p in prop_type]
-        row += [len(houses_df[houses_df.new_build_flag == 'Y']), len(houses_df.index)]
+        row += [year, oa, distance]
+        if not houses_df.empty:
+            row += [houses_df.price.max(), houses_df.price.min(), int(houses_df.price.mean()),
+                    int(houses_df.price.median())]
+            row += [len(houses_df[houses_df.property_type == p]) for p in prop_type]
+            row += [len(houses_df[houses_df.new_build_flag == 'Y']), len(houses_df.index)]
+        else:
+            row += [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         rows.append(row)
 
     csv_file_path = f'pp_oa.csv'
