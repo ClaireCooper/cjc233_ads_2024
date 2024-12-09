@@ -399,3 +399,42 @@ def osm_in_oa_radius_counts_to_csv(conn, distance, year, tag, value):
         with open(csv_file_path, 'w', newline='') as csvfile:
             csv_writer = csv.writer(csvfile, lineterminator='\n')
             csv_writer.writerows(rows)
+
+
+def houses_sold_within_distance_box_from_point_in_year(conn, latitude, longitude, distance, year):
+    start_date = str(year) + '-01-01'
+    end_date = str(year) + '-12-31'
+    (north, south, east, west) = osmnx.utils_geo.bbox_from_point((latitude, longitude), distance)
+    db_query = (f'SELECT price, property_type, new_build_flag FROM (SELECT postcode FROM postcode_data '
+                f'WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}) AS po '
+                f'INNER JOIN (SELECT * FROM pp_data WHERE date_of_transfer BETWEEN \'{start_date}\' AND \'{end_date}\' AND tenure_type="F") '
+                f'AS pp ON po.postcode = pp.postcode')
+    df = pd.read_sql(db_query, conn)
+    return df.loc[:, ~df.columns.duplicated()]
+
+
+def get_coordinates_for_oa(conn, oa, year=2021):
+    db_query = f'select latitude, longitude from oa_data where output_area = \'{oa}\' and year = {year};'
+    df = pd.read_sql(db_query, conn)
+    return df.loc[0, ~df.columns.duplicated()]
+
+
+def save_oa_house_data_to_csv(conn, oas, distance, year):
+    prop_type = ['F', 'T', 'S', 'D', 'O']
+    rows = []
+    for oa in oas:
+        row = []
+        coordinates = get_coordinates_for_oa(conn, oa)
+        houses_df = houses_sold_within_distance_box_from_point_in_year(conn, coordinates.latitude, coordinates.longitude,
+                                                                       distance, year)
+        row += [year, oa, distance]
+        row += [houses_df.price.max(), houses_df.price.min(), houses_df.price.mean(), houses_df.price.median()]
+        row += [len(houses_df[houses_df.property_type == p]) for p in prop_type]
+        row += [len(houses_df[houses_df.new_build_flag == 'Y']), len(houses_df.index)]
+        rows.append(row)
+
+    csv_file_path = f'pp_oa.csv'
+    print('Storing data to CSV...')
+    with open(csv_file_path, 'w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile, lineterminator='\n')
+        csv_writer.writerows(rows)
