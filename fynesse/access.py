@@ -450,3 +450,25 @@ def insert_feature_count_for_output_area(conn, output_area, tagkey, tagvalue, co
         cur.execute(db_query)
     conn.commit()
 
+
+def insert_oa_house_data(conn, oas, distance, year):
+    prop_type = ['F', 'T', 'S', 'D']
+    rows = []
+    for oa in oas:
+        row = []
+        coordinates = get_coordinates_for_oa(conn, oa)
+        houses_df = houses_sold_within_distance_box_from_point_in_year(conn, coordinates.latitude,
+                                                                       coordinates.longitude, distance, year)
+        row += [year, oa, distance, houses_df.price.max(), houses_df.price.min(), houses_df.price.mean().astype(int),
+                houses_df.price.median()]
+        row += [len(houses_df[houses_df.property_type == p]) for p in prop_type]
+        row += [len(houses_df[houses_df.new_build_flag == 'Y']), len(houses_df.index)]
+        rows.append(row)
+
+    csv_file_path = f'pp_oa.csv'
+    print('Storing data to CSV...')
+    with open(csv_file_path, 'w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile, lineterminator='\n')
+        csv_writer.writerows(rows)
+    print('Uploading CSV to DB...')
+    upload_csv_to_db(conn, 'oa_pp_data', csv_file_path)
