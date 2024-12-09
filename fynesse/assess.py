@@ -378,15 +378,6 @@ def select_feature_count_for_output_area(conn, output_area, feature, distance=10
     return rows[0][0]
 
 
-def insert_feature_count_for_output_area(conn, output_area, tagkey, tagvalue, count, distance=1000, year=2021):
-    db_query = (
-        f"INSERT INTO osm_oa_radius_counts (year, output_area, tagkey, tagvalue, distance, count) "
-        f"VALUES({year}, '{output_area}', '{tagkey}', '{tagvalue}', {distance}, {count})")
-    with conn.cursor() as cur:
-        cur.execute(db_query)
-    conn.commit()
-
-
 def select_feature_counts(conn, oas_str, feature, year=2021, distance=1000):
     db_query = (f'SELECT count FROM osm_oa_radius_counts '
                 f'WHERE year={year} AND output_area IN {oas_str} AND '
@@ -410,7 +401,7 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
                 count = select_feature_count_for_output_area(conn, oa, (k, v), distance, year)
                 if count is None:
                     count = osm_in_oa_radius_counts(conn, oa, k, v, distance, year)
-                    insert_feature_count_for_output_area(conn, oa, k, v, count, distance, year)
+                    access.insert_feature_count_for_output_area(conn, oa, k, v, count, distance, year)
                 fcs.append(count)
         cs.append(fcs)
     return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))

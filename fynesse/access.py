@@ -440,3 +440,13 @@ def save_oa_house_data_to_csv(conn, oas, distance, year):
     with open(csv_file_path, 'w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile, lineterminator='\n')
         csv_writer.writerows(rows)
+
+
+def insert_feature_count_for_output_area(conn, output_area, tagkey, tagvalue, count, distance=1000, year=2021):
+    db_query = (
+        f"INSERT INTO osm_oa_radius_counts (year, output_area, tagkey, tagvalue, distance, count) "
+        f"VALUES({year}, '{output_area}', '{tagkey}', '{tagvalue}', {distance}, {count})")
+    with conn.cursor() as cur:
+        cur.execute(db_query)
+    conn.commit()
+
