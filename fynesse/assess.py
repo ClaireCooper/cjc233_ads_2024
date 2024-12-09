@@ -483,3 +483,35 @@ def get_oa_house_data(conn, oas, distance=1000, year=2021):
         access.insert_oa_house_data(conn, oas_to_find, distance, year)
         df = select_house_data(conn, oas, distance, year)
     return df
+
+
+def plot_r2s_bar_chart(r2s):
+    fig, ax = plt.subplots()
+    r2s.plot(kind='bar', ax=ax)
+    ax.set_title('R squared for a single feature with a constant, \n transformed by given functions')
+    plt.show()
+
+
+def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fns, title):
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 10), sharey=True)
+    fig.suptitle(title)
+    for i, col in enumerate(train_x.columns):
+        axes[i // cols][i % cols].plot(train_x[col], all_y.loc[train_x.index], 'b.')
+        axes[i // cols][i % cols].set_title(col)
+        axes[i // cols][i % cols].set_ylim(2.5, 5)
+        x = np.linspace(0, train_x[col].max(), 100)
+        for name, f in design_fns:
+            y = models[col][name].predict(sm.tools.add_constant(f(x)))
+            axes[i // cols][i % cols].plot(x, y, '-r')
+    plt.show()
+
+
+def plot_single_feature_residuals(rows, cols, test_x, all_y, models, design_fn_name='linear', design_fn=lambda x: x):
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 10), sharey=True)
+    fig.suptitle('Residuals')
+    for i, col in enumerate(test_x.columns):
+        axes[i // cols][i % cols].set_title(col)
+        x = test_x[col]
+        y = models[col][design_fn_name].predict(sm.tools.add_constant(design_fn(x)))
+        axes[i // cols][i % cols].plot(x, all_y.loc[test_x.index] - y, 'b.')
+    plt.show()
