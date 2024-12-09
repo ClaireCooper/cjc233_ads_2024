@@ -465,3 +465,21 @@ def get_ages(conn, oas, year=2021):
     db_query = f'SELECT * FROM age_data WHERE year={year} and geography in {oas_str}'
     df = pd.read_sql(db_query, conn)
     return df.drop(['db_id', 'year'], axis=1).set_index('geography')
+
+
+def select_house_data(conn, oas, distance, year):
+    oas_str = '(' + ','.join(['"' + oa + '"' for oa in oas]) + ')'
+    db_query = (f'SELECT * FROM oa_pp_data WHERE output_area in {oas_str} AND '
+                f'year={year} AND distance={distance} '
+                f'ORDER BY output_area')
+    df = pd.read_sql(db_query, conn)
+    return df.loc[:, ~df.columns.duplicated()].set_index('output_area').drop(['db_id', 'year'], axis=1)
+
+
+def get_oa_house_data(conn, oas, distance=1000, year=2021):
+    df = select_house_data(conn, oas, distance, year)
+    oas_to_find = list(set(oas) - set(df.index.tolist()))
+    if len(oas_to_find) > 0:
+        access.insert_oa_house_data(conn, oas_to_find, distance, year)
+        df = select_house_data(conn, oas, distance, year)
+    return df
