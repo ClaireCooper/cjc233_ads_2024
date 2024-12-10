@@ -543,3 +543,15 @@ def get_ns_sec_data(conn, output_areas):
             rename(columns={'geography': 'output_area'}).
             drop(['db_id', 'year'], axis=1).
             set_index('output_area').sort_index())
+
+
+def get_occ_data(conn, output_areas):
+    oas_str = '(' + ','.join(['"' + oa + '"' for oa in output_areas]) + ')'
+    db_query = (f'SELECT * '
+                f'FROM occ_data '
+                f'WHERE geography in {oas_str} '
+                f'ORDER BY geography')
+    return (pd.read_sql(db_query, conn).
+            rename(columns={'geography': 'output_area'}).
+            drop(['db_id', 'year'], axis=1).
+            set_index('output_area').sort_index())
