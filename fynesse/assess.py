@@ -1,3 +1,4 @@
+import itertools
 import math
 from datetime import datetime, date
 
@@ -415,11 +416,13 @@ def get_r2s_for_features(training_features, testing_features, y,
     y_test = y.loc[testing_features.index.to_list()]
     if design_fns is None:
         design_fns = {'linear': lambda x: x}
-    for col in training_features.columns:
-        r2s[col] = {}
-        models[col] = {}
-        x_train = training_features[col]
-        x_test = testing_features[col]
+    groups = itertools.combinations(training_features.columns, group_size)
+    for group in groups:
+        group_name = ','.join(group)
+        r2s[group_name] = {}
+        models[group_name] = {}
+        x_train = training_features.loc[:, group]
+        x_test = testing_features.loc[:, group]
 
         for (name, f) in design_fns.items():
             y_prediction, model = predict_with_glm(
@@ -428,8 +431,8 @@ def get_r2s_for_features(training_features, testing_features, y,
                 y_train,
                 f(x_test),
             )
-            r2s[col][name] = metrics.r2_score(y_test, y_prediction)
-            models[col][name] = model
+            r2s[group_name][name] = metrics.r2_score(y_test, y_prediction)
+            models[group_name][name] = model
     return pd.DataFrame(r2s).T, models
 
 
@@ -486,7 +489,7 @@ def get_oa_house_data(conn, oas, distance=1000, year=2021):
 
 
 def plot_r2s_bar_chart(r2s):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(1 + 0.3*len(r2s), 5))
     r2s.plot(kind='bar', ax=ax)
     ax.set_title('R squared for a single feature with a constant, \n transformed by given functions')
     plt.show()
