@@ -501,7 +501,7 @@ def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fn
         axes[i].plot(train_x[col], all_y.loc[train_x.index], 'b.')
         axes[i].set_title(col)
         axes[i].set_ylim(2.5, 5)
-        x = np.linspace(0, train_x[col].max(), 100)
+        x = np.linspace(train_x[col].min(), train_x[col].max(), 100)
         for name, f in design_fns.items():
             y = models[col][name].predict(sm.tools.add_constant(f(x)))
             axes[i].plot(x, y, '-r')
