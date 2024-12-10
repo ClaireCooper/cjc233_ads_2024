@@ -493,7 +493,7 @@ def plot_r2s_bar_chart(r2s):
 
 
 def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fns, title):
-    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3), sharey=True)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3 + 1), sharey=True)
     if rows > 1 and cols > 1:
         axes = list(np.concatenate(axes).flat)
     fig.suptitle(title)
@@ -509,7 +509,7 @@ def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fn
 
 
 def plot_single_feature_residuals(rows, cols, test_x, all_y, models, design_fn_name='linear', design_fn=lambda x: x):
-    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3), sharey=True)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3 + 1), sharey=True)
     if rows > 1 and cols > 1:
         axes = list(np.concatenate(axes).flat)
     fig.suptitle('Residuals')
@@ -519,3 +519,12 @@ def plot_single_feature_residuals(rows, cols, test_x, all_y, models, design_fn_n
         y = models[col][design_fn_name].predict(sm.tools.add_constant(design_fn(x)))
         axes[i].plot(x, all_y.loc[test_x.index] - y, 'b.')
     plt.show()
+
+
+def get_coordinates_for_oas(conn, output_areas):
+    oas_str = '(' + ','.join(['"' + oa + '"' for oa in output_areas]) + ')'
+    db_query = (f'SELECT output_area, latitude, longitude '
+                f'FROM oa_data '
+                f'WHERE output_area in {oas_str} '
+                f'ORDER BY output_area')
+    return pd.read_sql(db_query, conn).set_index('output_area')
