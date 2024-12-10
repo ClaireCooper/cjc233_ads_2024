@@ -416,13 +416,16 @@ def get_r2s_for_features(training_features, testing_features, y,
     y_test = y.loc[testing_features.index.to_list()]
     if design_fns is None:
         design_fns = {'linear': lambda x: x}
-    groups = itertools.combinations(training_features.columns, group_size)
+    groups = list(itertools.combinations(training_features.columns.tolist(), group_size))
     for group in groups:
-        group_name = ','.join(group)
+        if isinstance(group[0], tuple):
+            group_name = ','.join(['(' + ','.join(c) + ')' for c in group])
+        else:
+            group_name = ','.join(group)
         r2s[group_name] = {}
         models[group_name] = {}
-        x_train = training_features.loc[:, group]
-        x_test = testing_features.loc[:, group]
+        x_train = training_features.loc[:, list(group)]
+        x_test = testing_features.loc[:, list(group)]
 
         for (name, f) in design_fns.items():
             y_prediction, model = predict_with_glm(
