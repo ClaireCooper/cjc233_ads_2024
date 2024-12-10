@@ -493,7 +493,7 @@ def plot_r2s_bar_chart(r2s):
 
 
 def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fns, title):
-    fig, axes = plt.subplots(rows, cols, figsize=(15, 10), sharey=True)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3), sharey=True)
     if rows > 1 and cols > 1:
         axes = list(np.concatenate(axes).flat)
     fig.suptitle(title)
@@ -509,7 +509,7 @@ def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fn
 
 
 def plot_single_feature_residuals(rows, cols, test_x, all_y, models, design_fn_name='linear', design_fn=lambda x: x):
-    fig, axes = plt.subplots(rows, cols, figsize=(15, 10), sharey=True)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3), sharey=True)
     if rows > 1 and cols > 1:
         axes = list(np.concatenate(axes).flat)
     fig.suptitle('Residuals')
