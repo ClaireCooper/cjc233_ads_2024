@@ -489,14 +489,14 @@ def get_oa_house_data(conn, oas, distance=1000, year=2021):
 
 
 def plot_r2s_bar_chart(r2s):
-    fig, ax = plt.subplots(figsize=(1 + 0.3*len(r2s), 5))
+    fig, ax = plt.subplots(figsize=(1 + 0.3 * len(r2s), 5))
     r2s.plot(kind='bar', ax=ax)
     ax.set_title('R squared for a single feature with a constant, \n transformed by given functions')
     plt.show()
 
 
 def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fns, title):
-    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3 + 1), sharey=True)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 2.5, rows * 3 + 1), sharey=True)
     if rows > 1 and cols > 1:
         axes = list(np.concatenate(axes).flat)
     fig.suptitle(title)
@@ -512,7 +512,7 @@ def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fn
 
 
 def plot_single_feature_residuals(rows, cols, test_x, all_y, models, design_fn_name='linear', design_fn=lambda x: x):
-    fig, axes = plt.subplots(rows, cols, figsize=(cols*2.5, rows*3 + 1), sharey=True)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 2.5, rows * 3 + 1), sharey=True)
     if rows > 1 and cols > 1:
         axes = list(np.concatenate(axes).flat)
     fig.suptitle('Residuals')
@@ -531,3 +531,15 @@ def get_coordinates_for_oas(conn, output_areas):
                 f'WHERE output_area in {oas_str} '
                 f'ORDER BY output_area')
     return pd.read_sql(db_query, conn).set_index('output_area')
+
+
+def get_ns_sec_data(conn, output_areas):
+    oas_str = '(' + ','.join(['"' + oa + '"' for oa in output_areas]) + ')'
+    db_query = (f'SELECT * '
+                f'FROM sec_data '
+                f'WHERE geography in {oas_str} '
+                f'ORDER BY geography')
+    return (pd.read_sql(db_query, conn).
+            rename(columns={'geography': 'output_area'}).
+            drop(['db_id', 'year'], axis=1).
+            set_index('output_area').sort_index())
