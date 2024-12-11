@@ -311,29 +311,11 @@ def plot_osm_feature(conn, ax, border, tag, value=None):
     osm_df['centroid'] = gpd.points_from_xy(osm_df['longitude'], osm_df['latitude'])
     osm_df = osm_df.set_geometry('centroid')
     osm_df = osm_df.set_crs('EPSG:4326')
-    osm_df.to_crs(border.crs)
+    osm_df = osm_df.to_crs(border.crs)
     plot_country_border(ax, border)
     osm_df.plot(ax=ax, markersize=4, color='red')
     ax.set_title(title)
-    ax.set_xlim([-6.5, None])
-    ax.set_ylim([None, 55.9])
     ax.set_axis_off()
-
-
-def get_oa_feature_counts(conn, year, features, distance=1000):
-    df = pd.read_sql('SELECT output_area FROM census_oa_data ORDER BY output_area', conn)
-    for (key, value) in features:
-        db_query = (f'SELECT counts.count FROM (SELECT output_area, count FROM osm_oa_radius_counts '
-                    f'WHERE year={year} AND tagkey="{key}" AND tagvalue="{value}" and distance={distance}) as counts '
-                    f'RIGHT JOIN census_oa_data as oa on oa.output_area = counts.output_area ORDER BY oa.output_area')
-        df[key + ':' + value] = pd.read_sql(db_query, conn)['count'].fillna(0).astype(int)
-    return df.set_index('output_area')
-
-
-def get_census_variable(conn, variable):
-    db_query = f'SELECT output_area, {variable} FROM census_oa_data ORDER BY output_area'
-    df = pd.read_sql(db_query, conn)
-    return df.loc[:, ~df.columns.duplicated()].set_index('output_area')
 
 
 def select_output_area_geometries(conn):
@@ -395,7 +377,6 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     oas = sorted(oas)
     oas_str = '(' + ','.join(['"' + oa + '"' for oa in oas]) + ')'
     for (k, v) in features:
-        print(k, v)
         fcs = select_feature_counts(conn, oas_str, (k, v), year, distance)
         if len(fcs) < len(oas):
             fcs = []
