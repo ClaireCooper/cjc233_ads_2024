@@ -486,6 +486,7 @@ def plot_r2s_bar_chart(r2s):
 
 def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fns, title):
     fig, axes = plt.subplots(rows, cols, figsize=(cols * 2.5, rows * 3 + 1), sharey=True)
+    train_y = all_y.loc[train_x.index]
     if rows > 1 and cols > 1:
         axes = list(np.concatenate(axes).flat)
     fig.suptitle(title)
@@ -494,9 +495,9 @@ def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fn
             col_name = '(' + ','.join(col) + ')'
         else:
             col_name = col
-        axes[i].plot(train_x.loc[:, col], all_y.loc[train_x.index], 'b.')
+        axes[i].plot(train_x.loc[:, col], train_y, 'b.')
         axes[i].set_title(col)
-        axes[i].set_ylim(2.5, 5)
+        axes[i].set_ylim(train_y.min(), train_y.max())
         x = np.linspace(train_x.loc[:, col].min(), train_x.loc[:, col].max(), 100)
         for name, f in design_fns.items():
             y = models[col_name][name].predict(sm.tools.add_constant(f(x)))
