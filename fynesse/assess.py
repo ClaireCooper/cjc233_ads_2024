@@ -395,15 +395,20 @@ def get_feature_counts(conn, oas, features, year=2021, distance=1000):
     oas = sorted(oas)
     oas_str = '(' + ','.join(['"' + oa + '"' for oa in oas]) + ')'
     for (k, v) in features:
+        print(k, v)
         fcs = select_feature_counts(conn, oas_str, (k, v), year, distance)
         if len(fcs) < len(oas):
             fcs = []
+            i = 0
             for oa in oas:
+                i += 1
                 count = select_feature_count_for_output_area(conn, oa, (k, v), distance, year)
                 if count is None:
                     count = osm_in_oa_radius_counts(conn, oa, k, v, distance, year)
                     access.insert_feature_count_for_output_area(conn, oa, k, v, count, distance, year)
                 fcs.append(count)
+                if i % 1000 == 0:
+                    print(i)
         cs.append(fcs)
     return pd.DataFrame(np.array(cs).T, index=oas, columns=pd.MultiIndex.from_tuples(features))
 
@@ -504,12 +509,16 @@ def plot_single_feature_predictors(rows, cols, train_x, all_y, models, design_fn
         axes = list(np.concatenate(axes).flat)
     fig.suptitle(title)
     for i, col in enumerate(train_x.columns):
-        axes[i].plot(train_x[col], all_y.loc[train_x.index], 'b.')
+        if isinstance(col, tuple):
+            col_name = '(' + ','.join(col) + ')'
+        else:
+            col_name = col
+        axes[i].plot(train_x.loc[:, col], all_y.loc[train_x.index], 'b.')
         axes[i].set_title(col)
         axes[i].set_ylim(2.5, 5)
-        x = np.linspace(train_x[col].min(), train_x[col].max(), 100)
+        x = np.linspace(train_x.loc[:, col].min(), train_x.loc[:, col].max(), 100)
         for name, f in design_fns.items():
-            y = models[col][name].predict(sm.tools.add_constant(f(x)))
+            y = models[col_name][name].predict(sm.tools.add_constant(f(x)))
             axes[i].plot(x, y, '-r')
     plt.show()
 
@@ -520,9 +529,13 @@ def plot_single_feature_residuals(rows, cols, test_x, all_y, models, design_fn_n
         axes = list(np.concatenate(axes).flat)
     fig.suptitle('Residuals')
     for i, col in enumerate(test_x.columns):
+        if isinstance(col, tuple):
+            col_name = '(' + ','.join(col) + ')'
+        else:
+            col_name = col
         axes[i].set_title(col)
-        x = test_x[col]
-        y = models[col][design_fn_name].predict(sm.tools.add_constant(design_fn(x)))
+        x = test_x.loc[:, col]
+        y = models[col_name][design_fn_name].predict(sm.tools.add_constant(design_fn(x)))
         axes[i].plot(x, all_y.loc[test_x.index] - y, 'b.')
     plt.show()
 
