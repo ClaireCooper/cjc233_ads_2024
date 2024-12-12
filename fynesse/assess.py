@@ -17,41 +17,10 @@ from sklearn.linear_model import LinearRegression
 
 from . import access
 
-"""These are the types of import we might expect in this file
-import pandas
-import bokeh
-import seaborn
-import matplotlib.pyplot as plt
-import sklearn.decomposition as decomposition
-import sklearn.feature_extraction"""
-
 """Place commands in this file to assess the data you have downloaded. How are missing values encoded, 
 how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. 
 Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly 
 timezoned."""
-
-
-def data():
-    """Load the data from access and ensure missing values are correctly encoded as well as indices correct,
-    column names informative, date and times correctly formatted. Return a structured data structure such as a data
-    frame."""
-    df = access.data()
-    raise NotImplementedError
-
-
-def query(data):
-    """Request user input for some aspect of the data."""
-    raise NotImplementedError
-
-
-def view(data):
-    """Provide a view of the data that allows the user to verify some aspect of its quality."""
-    raise NotImplementedError
-
-
-def labelled(data):
-    """Provide a labelled set of data ready for supervised learning."""
-    raise NotImplementedError
 
 
 def buildings_with_addresses(buildings_df):
@@ -142,10 +111,6 @@ def plot_factors_affecting_price(df):
 def predict_prices_now(timestamps, prices):
     log_prices = list(map(lambda p: math.log(p), prices.tolist()))
     price_model = LinearRegression().fit(timestamps, log_prices)
-    m = price_model.coef_
-    c = price_model.intercept_
-    # ln(p) = mt + c
-    # p = e^(mt+c)
 
     log_predicted_price_today = (
         price_model.predict([[datetime.combine(date.today(), datetime.min.time()).timestamp()]])[0])
@@ -273,15 +238,6 @@ def plot_country_border(ax, gdf):
 
 def gdf_from_df_with_lat_lon(df, lat_column='Latitude', lon_column='Longitude'):
     return gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[lon_column], df[lat_column]))
-
-
-def select_output_areas_in_limits(conn, north, south, east, west, table_name='oa_data', geometry_column='geometry'):
-    db_query = (f'SELECT *, ST_AsBinary({geometry_column}) as geometry_bin FROM {table_name} '
-                f'WHERE latitude BETWEEN {south} AND {north} AND longitude BETWEEN {west} AND {east}')
-    df = pd.read_sql(db_query, conn)
-    gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
-    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:4326')
-    return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
 
 
 def select_osm_by_tag_and_value(conn, key, value):

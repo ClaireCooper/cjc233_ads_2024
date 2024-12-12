@@ -15,27 +15,11 @@ from shapely.geometry import shape
 
 from .config import *
 
-"""These are the types of import we might expect in this file
-import httplib2
-import oauth2
-import tables
-import mongodb
-import sqlite"""
-
 # This file accesses the data
 
 """Place commands in this file to access the data electronically. Don't remove any missing values, or deal with 
 outliers. Make sure you have legalities correct, both intellectual property and personal data privacy rights. Beyond 
 the legal side also think about the ethical issues around this data."""
-
-
-def data():
-    """Read the data from the web or local file, returning structured format such as a data frame"""
-    raise NotImplementedError
-
-
-def hello_world():
-    print("Hello from the data science library!")
 
 
 def download_price_paid_data(year_from, year_to):
@@ -167,14 +151,6 @@ def select_all_from_table(conn, table):
     return df.loc[:, ~df.columns.duplicated()]
 
 
-def select_all_from_oa_table(conn):
-    db_query = f'SELECT output_area, latitude, longitude, ST_AsBinary(geometry) as geometry FROM oa_data'
-    df = pd.read_sql(db_query, conn)
-    gs = gpd.GeoSeries.from_wkb(df['geometry'])
-    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
-    return gdf.loc[:, ~df.columns.duplicated()]
-
-
 def download_output_area_data():
     url = ('https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/6beafcfd9b9c4c9993a06b6b199d7e6d'
            '/geojson?layers=0')
@@ -198,24 +174,6 @@ def download_country_osm_data(country, continent='europe'):
             with open(f"./{continent.lower().replace(' ', '_')}/"
                       f"{country.lower().replace(' ', '_')}.osm.pbf", "wb") as f:
                 f.write(response.content)
-
-
-def _inner(row, points, oas):
-    for i in range(len(points)):
-        if shapely.within(points[i], row['geometry']):
-            oas[i] = row['output_area']
-
-
-def select_output_areas_from_locations(conn, points, points_crs='EPSG:4326'):
-    db_query = f'SELECT output_area, ST_AsBinary(geometry) as geometry FROM oa_data'
-    df = pd.read_sql(db_query, conn)
-    gs = gpd.GeoSeries.from_wkb(df['geometry'])
-    gdf = gpd.GeoDataFrame(df, geometry=gs, crs='EPSG:27700')
-    gdf = gdf.loc[:, ~df.columns.duplicated()]
-    gdf = gdf.to_crs(points_crs)
-    oas = [None for point in range(len(points))]
-    gdf.apply(lambda row: _inner(row, points, oas), axis=1)
-    return oas
 
 
 def save_tag_locations_as_csv(osm_file_path, tag_list):
@@ -359,23 +317,6 @@ def select_all_from_table_with_geometry(conn, table, geometry_column='geometry',
     gs = gpd.GeoSeries.from_wkb(df['geometry_bin'])
     gdf = gpd.GeoDataFrame(df, geometry=gs, crs=crs)
     return gdf.loc[:, ~df.columns.duplicated()].drop('geometry_bin', axis=1)
-
-
-def osm_in_oa_radius_counts_to_csv(conn, distance, year, tag, value):
-    with conn.cursor() as cur:
-        print('Selecting data...')
-        cur.execute(f'select year, output_area, tagkey, tagvalue, {distance} as distance, count(*) as count from ('
-                    f'select year, output_area, latitude, longitude from oa_data where year = {year}) as oa cross '
-                    f'join (select latitude, longitude, tagkey, tagvalue from osm_data where tagkey="{tag}" and '
-                    f'tagvalue="{value}") as osm where ST_DISTANCE_SPHERE(POINT(oa.longitude, oa.latitude), '
-                    f'POINT(osm.longitude, osm.latitude)) < {distance} GROUP BY year, output_area, tagkey, tagvalue;')
-        rows = cur.fetchall()
-
-        csv_file_path = f'osm_oa_{tag}_{value}.csv'
-        print('Storing data to CSV...')
-        with open(csv_file_path, 'w', newline='') as csvfile:
-            csv_writer = csv.writer(csvfile, lineterminator='\n')
-            csv_writer.writerows(rows)
 
 
 def houses_sold_within_distance_box_from_point_in_year(conn, latitude, longitude, distance, year):
